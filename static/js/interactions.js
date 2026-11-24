@@ -235,7 +235,8 @@ class NetworkDiagram {
     this.container.classList.toggle("has-top-lane", Boolean(extraLinks && extraLinks.length));
 
     const row = document.createElement("div");
-    row.className = "net-row";
+    // The device count lets the CSS give 2- and 3-device diagrams sensible widths.
+    row.className = "net-row nodes-" + nodes.length;
     const diagram = this;
 
     nodes.forEach(function (node) {
@@ -302,6 +303,8 @@ class NetworkDiagram {
   layout() {
     if (!this.nodes.length) return;
     const box = this.container.getBoundingClientRect();
+    // On narrow screens the diagram can scroll sideways, so add how far it is scrolled.
+    const scrollX = this.container.scrollLeft;
     const diagram = this;
 
     this.links.forEach(function (link) {
@@ -310,8 +313,8 @@ class NetworkDiagram {
       const style = link.element.style;
 
       if (link.lane === "top") {
-        const fromCentre = fromIcon.left + fromIcon.width / 2 - box.left;
-        const toCentre = toIcon.left + toIcon.width / 2 - box.left;
+        const fromCentre = fromIcon.left + fromIcon.width / 2 - box.left + scrollX;
+        const toCentre = toIcon.left + toIcon.width / 2 - box.left + scrollX;
         link.x1 = fromCentre;
         link.x2 = toCentre;
         link.y = fromIcon.top - box.top - 34;
@@ -320,8 +323,8 @@ class NetworkDiagram {
         style.top = link.y + "px";
         style.height = "30px";
       } else {
-        link.x1 = fromIcon.right - box.left + 8;
-        link.x2 = toIcon.left - box.left - 8;
+        link.x1 = fromIcon.right - box.left + scrollX + 8;
+        link.x2 = toIcon.left - box.left + scrollX - 8;
         link.y = fromIcon.top + fromIcon.height / 2 - box.top - 2;
         style.left = link.x1 + "px";
         style.width = Math.max(0, link.x2 - link.x1) + "px";
@@ -333,6 +336,7 @@ class NetworkDiagram {
 
     // Keep a resting packet in the right place after the window is resized.
     if (this.parked && this.packetElement && !this.isAnimating()) {
+      this.packetElement.style.maxWidth = this.routeLength(this.parked.path) + "px";
       const geometry = this.packetGeometry(this.parked.path, this.parked.direction);
       this.packetElement.style.top = geometry.y + "px";
       this.packetElement.style.transform = "translateX(" + geometry.endX + "px)";
@@ -356,9 +360,11 @@ class NetworkDiagram {
     element.textContent = this.caption.text;
     element.className = "diagram-caption" + (this.caption.packet ? " style-" + this.caption.packet.style : "");
 
-    const width = this.container.clientWidth;
+    const width = this.container.scrollWidth;
     const path = this.caption.packet ? this.findPath(this.caption.packet.from, this.caption.packet.to, this.caption.packet.route) : [];
-    if (path.length && path[0].lane === "main") {
+    // Only sit under the line when it is long enough; otherwise the caption would cover device labels.
+    const longEnough = path.length && path[0].lane === "main" && this.routeLength(path) >= 240;
+    if (longEnough) {
       // Under the line, kept clear of the device labels at each end.
       const left = Math.min.apply(null, path.map(function (link) { return link.x1; })) + 40;
       const right = Math.max.apply(null, path.map(function (link) { return link.x2; })) - 40;
@@ -371,10 +377,10 @@ class NetworkDiagram {
       element.style.left = Math.max(4, Math.min(centre - own / 2, width - own - 4)) + "px";
     } else {
       // No packet (or the top lane): show it along the bottom of the diagram.
-      element.style.maxWidth = Math.max(200, width - 32) + "px";
+      element.style.maxWidth = Math.max(200, this.container.clientWidth - 32) + "px";
       element.style.top = "";
       element.style.bottom = "14px";
-      element.style.left = "16px";
+      element.style.left = (this.container.scrollLeft + 16) + "px";
     }
   }
 
@@ -397,6 +403,13 @@ class NetworkDiagram {
     }, this);
   }
 
+  // Length of the line(s) a packet travels along, used as its maximum width.
+  routeLength(path) {
+    const left = Math.min.apply(null, path.map(function (link) { return link.x1; }));
+    const right = Math.max.apply(null, path.map(function (link) { return link.x2; }));
+    return Math.max(90, right - left);
+  }
+
   /* Start/end x positions and the y position for a packet on a path. */
   packetGeometry(path, direction) {
     const width = this.packetElement ? this.packetElement.offsetWidth : 120;
@@ -406,7 +419,7 @@ class NetworkDiagram {
     const y = path[0].y - height / 2 + (path[0].lane === "top" ? 0 : 2);
 
     // Keep the packet inside the diagram even on narrow screens.
-    const maxX = this.container.clientWidth - width - 4;
+    const maxX = this.container.scrollWidth - width - 4;
     let startX = direction === "right" ? left : right - width;
     let endX = direction === "right" ? right - width : left;
     startX = Math.max(4, Math.min(startX, maxX));
@@ -450,6 +463,12 @@ class NetworkDiagram {
     this.container.appendChild(element);
     this.packetElement = element;
     this.parked = { packet: packet, path: route.path, direction: route.direction };
+
+    // Never let the packet be wider than the line it travels along, or it would cover
+    // a device on smaller screens. Long labels end in "..." (the full text is in the inspector).
+    element.style.maxWidth = this.routeLength(route.path) + "px";
+    // On short lines, drop the "Inspect" tag so the packet's own label stays readable.
+    element.classList.toggle("compact", this.routeLength(route.path) < 220);
 
     const geometry = this.packetGeometry(route.path, route.direction);
     element.style.top = geometry.y + "px";
