@@ -8,11 +8,11 @@
        stylesheet falls back to Manrope / system fonts automatically. -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
   <link rel="icon" href="{{ url_for('static', filename='images/favicon.svg') }}" type="image/svg+xml">
 </head>
-<body class="{% block body_class %}{% endblock %}">
+<body class="{% block body_class %}{% endblock %}" data-lab="{{ active }}">
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <defs>
@@ -112,6 +112,10 @@
   </div>
 </div>
 
+<script>
+  // Each lab's name, link and "completed" message (from progress.py), in lab order.
+  const LAB_LIST = {{ lab_info | tojson }};
+</script>
 <script src="{{ url_for('static', filename='js/interactions.js') }}"></script>
 <script src="{{ url_for('static', filename='js/tutorial.js') }}"></script>
 {% block scripts %}{% endblock %}

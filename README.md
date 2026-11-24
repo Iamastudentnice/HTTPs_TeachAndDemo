@@ -67,8 +67,15 @@ press `Ctrl + C` in the terminal to stop the app.
   warning appears). Skip tutorial (click twice: it is padlocked) or the Examiner Button ends this.
   Progress is kept for the browser tab: a refresh returns to the same step, and opening another lab
   by the back button or a typed address leads straight back to the tutorial.
-  Small green arrows point at what to read or press on each step (or, where there is no room for
-  an arrow, the element gets a dashed green outline).
+  Each step is split into small tasks shown one at a time ("What to do"). Reading tasks have a
+  Got it button; action tasks (Send, Switch to HTTPS, tick the eavesdropper box) finish by
+  themselves the moment the action really happens. A small green arrow points at the current task
+  only, and it disappears as soon as the task is done (where there is no room for an arrow, the
+  element gets a dashed green outline). The box moves beside each new target and never covers it.
+  Step 6 is finished as soon as the eavesdropper box is ticked.
+- **Lab completed prompt** – when a lab's activities are all done, a box offers
+  "Continue to <next lab>" and "Explore Freely" (Packet Inspector, the last lab, only offers
+  Explore Freely). Nothing opens by itself. Completing Lab 01 also ends the tutorial lock.
 - **Examiner Button – Remove all restrictions** (amber button on the start page and in the tutorial) –
   unlocks every tutorial step straight away for this browser tab. Press it again to restore the normal
   guided mode. It does not change or skip any simulation.

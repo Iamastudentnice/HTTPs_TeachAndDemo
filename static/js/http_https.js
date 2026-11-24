@@ -131,6 +131,7 @@ document.addEventListener("DOMContentLoaded", function () {
           : '<div class="callout good"><strong>Scrambled.</strong> They see where it goes, not what it says.</div>';
       setOutput($("#server-view"), panels.server_view, "Nothing received yet.", "plain");
       updateHint();
+      refreshTutorial();   // e.g. the encrypted output has just appeared
     },
     onFinish: function () {
       tried[getProtocol()] = true;
@@ -143,6 +144,7 @@ document.addEventListener("DOMContentLoaded", function () {
     onReset: function () {
       clearPanels();
       updateHint();
+      refreshTutorial();
     },
   });
 
@@ -151,8 +153,13 @@ document.addEventListener("DOMContentLoaded", function () {
     $("#attacker-box").classList.toggle("hidden", !eavesdropperBox.checked);
     player.reset();
     previewDiagram();
+    refreshTutorial();   // e.g. the protocol switch is now on HTTPS
   }
-  eavesdropperBox.addEventListener("change", settingsChanged);
+  eavesdropperBox.addEventListener("change", function () {
+    // Ticking the box is the last tutorial task.
+    if (eavesdropperBox.checked) markTutorialEvent("observer-on");
+    settingsChanged();
+  });
   messageBox.addEventListener("input", function () {
     if (player.steps.length) player.reset();
     clearComparison();

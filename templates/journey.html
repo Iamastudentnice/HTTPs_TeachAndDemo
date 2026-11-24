@@ -80,6 +80,7 @@
 </section>
 
 <section class="section card hidden" id="journey-end">
+  <div class="eyebrow">{{ this_lab.done_title }}</div>
   <h2>That is the journey behind a simple website visit.</h2>
   <ol class="journey-summary">
     <li>Your browser read the address.</li>
@@ -92,10 +93,11 @@
     <li>The browser drew the page on your screen.</li>
   </ol>
   <p class="small muted">Remember: this is a simplified model. Real visits can skip or combine some of these stages.</p>
+  <p class="small"><strong>Next lab: {{ next_lab.title }}.</strong> {{ next_lab.summary }}</p>
   <div class="controls-row">
-    <button class="btn btn-primary" type="button" id="journey-again">Replay Journey</button>
-    <a class="btn" href="{{ url_for('index') }}">Explore other labs</a>
-    <a class="btn" href="{{ url_for('tls_handshake_page') }}">Next lab: TLS 1.3 Handshake</a>
+    <a class="btn btn-primary" href="{{ url_for(next_lab.endpoint) }}">Continue to {{ next_lab.title }}</a>
+    <a class="btn" href="{{ url_for('index') }}">Explore Freely</a>
+    <button class="btn" type="button" id="journey-again">Replay Journey</button>
   </div>
 </section>
 {% endblock %}

@@ -13,92 +13,169 @@
 // Things the learner has really done on this page, e.g. { "http-done": true }.
 const tutorialEvents = {};
 
+/* Each step has:
+   - needs: the real events that complete it (Next only works once they have all happened);
+   - tasks: what to do, in order. Only the first unfinished task is shown, with its own
+     instruction, arrow and outline. A task with "read" is finished with the Got it button;
+     the others are finished when their done() check becomes true. */
 const GUIDE_STEPS = [
   {
     title: "Your browser visits a website",
     text: "When you visit a website, your browser (the app you browse with) sends " +
       "information to the website's server (the computer that runs the website).",
-    todo: "Look at the connection, then press Next.",
-    needs: [],
+    needs: ["read-intro", "read-diagram"],
     target: ".page-header",
-    also: ["#diagram"],
-    pointers: [
-      { to: [".page-header h1"], text: "READ THIS", sides: ["right", "top", "bottom"] },
-      { to: ["#diagram .net-row"], text: "Watch how your message travels.", sides: ["top", "bottom"] },
+    tasks: [
+      { say: "Read the question at the top of the page.", point: ".page-header h1",
+        arrow: "READ THIS", sides: ["right", "bottom"], read: "read-intro" },
+      { say: "Look at the diagram: your browser is on the left, the website on the right.",
+        point: "#diagram .net-row", arrow: "Watch how your message travels.", sides: ["top", "bottom"],
+        read: "read-diagram" },
     ],
-    place: "right",   // beside the heading, so the heading and the diagram both stay visible
   },
   {
     title: "Try HTTP",
     text: "HTTP sends your information without encryption, so it travels as readable text.",
-    todo: "Choose HTTP, press Send message, then press Next Step until the last step.",
-    needs: ["http-done"],
+    needs: ["read-http", "http-done", "read-http-wire"],
     target: "#protocol-toggle",
-    pointers: [
-      { to: [".plain-terms dd:nth-of-type(1)"], text: "Read how HTTP sends information.", sides: ["right", "top"] },
-      { to: ["#player [data-action=start]"], text: "Press here to send your message.", sides: ["top", "right", "bottom"] },
+    tasks: [
+      { say: "Read how HTTP sends information.", point: ".plain-terms dd:nth-of-type(1)",
+        arrow: "Read how HTTP sends information.", sides: ["right", "bottom", "top"], read: "read-http" },
+      { say: "Choose HTTP.", point: '#protocol-toggle [data-value="HTTP"]', arrow: "Choose HTTP here.",
+        sides: ["bottom", "top", "right"],
+        done: function () { return protocolIs("HTTP") || did("read-http-wire"); } },
+      { say: "Press Send message.", point: "#player [data-action=start]", arrow: "Press here to send your message.",
+        sides: ["top", "right", "bottom"],
+        done: function () { return (protocolIs("HTTP") && simulationStarted()) || did("read-http-wire"); } },
+      { say: "Press Next Step until the last step, to follow your message all the way.",
+        point: "#player [data-action=next]", arrow: "Press Next Step to move your message on.",
+        sides: ["top", "bottom", "right"],
+        done: function () { return (did("http-done") && wireShows("plain")) || did("read-http-wire"); } },
+      { say: "Look at \"What your browser sends\": your login left your device as plain, readable text.",
+        point: "#wire-view", spotlight: "#wire-view", arrow: "Look here - your details travelled as readable text.",
+        sides: ["top", "left", "bottom"], read: "read-http-wire" },
     ],
-    also: ["#player [data-action=start]"],
   },
   {
     title: "Look inside a packet",
     text: "Your message travelled in packets. Opening one shows exactly what anyone on the " +
       "network could read.",
-    todo: "Select a blue (readable) packet in the Packets sent list or on the diagram.",
     needs: ["inspected-plain"],
     target: "#packet-log-box",
-    pointers: [
-      { to: ["#diagram .packet.style-plain", "#packet-log li button"], text: "Select this packet to inspect it.", sides: ["top", "right", "bottom", "left"] },
+    tasks: [
+      { say: "Choose HTTP, so the packets are readable.", point: '#protocol-toggle [data-value="HTTP"]',
+        arrow: "Choose HTTP here.", sides: ["bottom", "top", "right"],
+        done: function () { return protocolIs("HTTP") || hasReadablePacket() || did("inspected-plain"); } },
+      { say: "Press Send message, so there are packets to open.", point: "#player [data-action=start]",
+        arrow: "Press here to send your message.", sides: ["top", "right", "bottom"],
+        done: function () { return simulationStarted() || hasReadablePacket() || did("inspected-plain"); } },
+      { say: "Press Next Step until a packet appears.", point: "#player [data-action=next]",
+        arrow: "Press Next Step to send a packet.", sides: ["top", "bottom", "right"],
+        done: function () { return hasReadablePacket() || did("inspected-plain"); } },
+      { say: "Select a blue (readable) packet in the Packets sent list or on the diagram.",
+        point: findReadablePacket, arrow: "Select this packet to inspect it.", sides: ["top", "right", "bottom", "left"],
+        done: function () { return did("inspected-plain"); } },
     ],
   },
   {
     title: "Try HTTPS",
     text: "HTTPS encrypts your information while it travels. Encryption scrambles it " +
       "so that only the website can turn it back into readable text.",
-    todo: "Switch to HTTPS, press Send message and press Next Step until the last step.",
-    needs: ["https-done"],
+    needs: ["read-https", "https-done", "read-https-wire"],
     target: "#protocol-toggle",
-    pointers: [
-      { to: [".plain-terms dd:nth-of-type(2)"], text: "Now compare this with HTTPS.", sides: ["right", "top"] },
-      { to: ["#protocol-toggle [data-value=HTTPS]"], text: "Switch to HTTPS here.", sides: ["bottom", "top", "right"] },
-      { to: ["#player [data-action=start]"], text: "Press here to send your message.", sides: ["top", "right", "bottom"] },
+    tasks: [
+      { say: "Read how HTTPS is different.", point: ".plain-terms dd:nth-of-type(2)",
+        arrow: "Now compare this with HTTPS.", sides: ["right", "bottom", "top"], read: "read-https" },
+      { say: "Switch to HTTPS.", point: '#protocol-toggle [data-value="HTTPS"]', arrow: "Switch to HTTPS here.",
+        sides: ["bottom", "top", "right"],
+        done: function () { return protocolIs("HTTPS") || (did("https-done") && did("read-https-wire")); } },
+      { say: "Press Send message.", point: "#player [data-action=start]", arrow: "Press here to send your message.",
+        sides: ["top", "right", "bottom"],
+        done: function () {
+          return (protocolIs("HTTPS") && simulationStarted()) || (did("https-done") && did("read-https-wire"));
+        } },
+      { say: "Press Next Step until your browser encrypts the message (step 3).",
+        point: "#player [data-action=next]", arrow: "Press Next Step to move your message on.",
+        sides: ["top", "bottom", "right"],
+        done: function () { return (protocolIs("HTTPS") && wireShows("cipher")) || did("read-https-wire"); } },
+      { say: "Look at \"What your browser sends\": Python has just encrypted your original message. " +
+          "The readable text at the top was turned into the scrambled ciphertext underneath - " +
+          "that is what actually leaves your device.",
+        point: "#wire-view", spotlight: "#wire-view",
+        arrow: "Look here - Python has encrypted your original message.", sides: ["top", "left", "bottom"],
+        read: "read-https-wire" },
+      { say: "Press Next Step until the last step.", point: "#player [data-action=next]",
+        arrow: "Press Next Step to move your message on.", sides: ["top", "bottom", "right"],
+        done: function () { return did("https-done"); } },
     ],
-    also: ["#player [data-action=start]"],
   },
   {
     title: "Compare the results",
     text: "HTTP sends information without encryption. HTTPS protects it while it travels. " +
       "With HTTPS, the network can still see which website you visit, but not what you send.",
-    todo: "Compare the two columns. Both need a finished HTTP and HTTPS run.",
-    needs: ["http-done", "https-done"],
+    needs: ["http-done", "https-done", "read-compare"],
     target: "#compare-box",
-    place: "below",   // keep both columns visible; the note goes underneath
-    pointers: [
-      { to: ["#compare-http-note"], text: "Compare what each one reveals.", sides: ["right", "top"] },
+    tasks: [
+      { say: "Fill the HTTP column: choose HTTP, press Send message, then Next Step to the end.",
+        point: "#player [data-action=start]", arrow: "Press here to send your message.", sides: ["top", "right"],
+        done: function () { return did("http-done"); } },
+      { say: "Fill the HTTPS column: choose HTTPS, press Send message, then Next Step to the end.",
+        point: "#player [data-action=start]", arrow: "Press here to send your message.", sides: ["top", "right"],
+        done: function () { return did("https-done"); } },
+      { say: "Compare the two columns: HTTP shows your details, HTTPS only shows where the message went.",
+        point: "#compare-http-note", spotlight: "#compare-box", arrow: "Compare what each one reveals.",
+        sides: ["right", "top"], read: "read-compare" },
     ],
   },
   {
-    title: "Add an eavesdropper",
-    text: "Now see the same thing from the attacker's side: someone on the same Wi-Fi " +
-      "watching the connection.",
-    todo: "Tick the eavesdropper box, send a message and press Next Step until the last step.",
-    needs: ["observer-done"],
+    title: "Try adding an eavesdropper",
+    text: "An eavesdropper is someone on the same Wi-Fi who quietly watches the traffic passing by. " +
+      "Ticking the box adds a simulated one between your browser and the website.",
+    needs: ["observer-on"],
     target: "#observer-option",
-    pointers: [
-      { to: ["#observer-option"], text: "Tick this to add an eavesdropper.", sides: ["bottom", "left", "top"] },
+    doneText: "Great! The eavesdropper is now watching the connection. Send a message to see what it " +
+      "can read - or press Finish.",
+    tasks: [
+      { say: "Tick the box to let someone observe the connection.", point: "#observer-option",
+        arrow: "Tick the box to add an eavesdropper.", sides: ["bottom", "left", "top"],
+        done: function () { return did("observer-on"); } },
     ],
-    place: "top",   // above the checkbox, so the diagram (where the eavesdropper appears) stays visible
   },
 ];
 
-// Shown when the whole HTTP vs HTTPS lab has been completed.
-const LAB_COMPLETE = {
-  title: "HTTP vs HTTPS Lab Completed",
-  text: "You've seen how HTTP and HTTPS handle information differently.",
-  nextName: "The Journey of a Website",
-  nextUrl: "/journey",
-  nextTeaches: "What happens between pressing Enter and seeing the page, one simple stage at a time.",
-};
+/* ---------- Small checks the tasks use. They read the page as it is right now. ---------- */
+
+function did(name) {
+  return tutorialEvents[name] === true;
+}
+
+function protocolIs(value) {
+  const active = $("#protocol-toggle button.active");
+  return Boolean(active) && active.dataset.value === value;
+}
+
+function simulationStarted() {
+  const counter = $("#player .step-counter");
+  return Boolean(counter) && counter.textContent !== "Not started";
+}
+
+// "plain" (readable) or "cipher" (encrypted): what the "What your browser sends" box shows.
+function wireShows(kind) {
+  const wire = $("#wire-view");
+  return Boolean(wire) && wire.classList.contains(kind);
+}
+
+// A readable packet to open: the one on the diagram, or a blue one in the Packets sent list.
+function findReadablePacket() {
+  const onDiagram = $("#diagram .packet.style-plain");
+  if (isVisible(onDiagram)) return onDiagram;
+  const inList = $all("#packet-log li button").find(function (button) { return $(".dot-plain", button); });
+  return inList || null;
+}
+
+function hasReadablePacket() {
+  return Boolean(findReadablePacket());
+}
 
 const WARNING_TEXT = "Please complete this section before moving onto the next!";
 const NAV_WARNING_TEXT = "Tutorial active \u2014 complete or skip the tutorial to explore other labs.";
@@ -175,7 +252,7 @@ const guide = {
 function markTutorialEvent(name) {
   tutorialEvents[name] = true;
   saveTutorialState();
-  refreshGuideStatus();
+  renderTask();
 
   // If the whole lab is now done and the tutorial is not open, offer the next lab once.
   if (labIsComplete() && !guide.box && !guide.completionShown && $("#compare-box")) {
@@ -193,9 +270,28 @@ function stepIsComplete(index) {
   return examinerBypassEnabled || hasDone(GUIDE_STEPS[index].needs);
 }
 
-// The lab counts as complete when every step's actions have really happened.
+// A task is finished when its Got it button was pressed (read tasks) or its check is true.
+function taskIsDone(task) {
+  return task.read ? did(task.read) : task.done();
+}
+
+// The task to show now: the first unfinished one. None once the step is complete.
+function currentTask(index) {
+  if (stepIsComplete(index)) return null;
+  return GUIDE_STEPS[index].tasks.find(function (task) { return !taskIsDone(task); }) || null;
+}
+
+// The element a task points at, if it is on the page.
+function taskTarget(task) {
+  const element = typeof task.point === "function" ? task.point() : $(task.point);
+  return isVisible(element) ? element : null;
+}
+
+// The lab counts as complete when every real activity has happened (reading is not counted).
 function labIsComplete() {
-  return GUIDE_STEPS.every(function (step) { return hasDone(step.needs); });
+  return GUIDE_STEPS.every(function (step) {
+    return hasDone(step.needs.filter(function (name) { return name.indexOf("read-") !== 0; }));
+  });
 }
 
 /* ---------- Examiner mode ---------- */
@@ -218,7 +314,8 @@ function setExaminerMode(on) {
     // Storage blocked: the variable above still works for this page.
   }
   updateExaminerButtons();
-  refreshGuideStatus();
+  guide.taskKey = null;   // redraw the box text for the new mode
+  renderTask();
   returnToTutorialIfNeeded();
   showToast(on ? "Examiner mode enabled — tutorial restrictions removed."
                : "Guided mode restored — each section must be completed again.");
@@ -300,7 +397,7 @@ function endTutorial() {
 function hideGuide() {
   if (!guide.box) return;
   guide.box.classList.add("is-hidden");
-  updatePointers();   // removes the arrows and shows the "Start here" box again
+  placePointers(true);   // removes the arrows and shows the "Start here" box again
   document.body.style.paddingBottom = "";
   let tab = $("#guide-restore");
   if (!tab) {
@@ -320,14 +417,14 @@ function showHiddenGuide() {
   guide.box.classList.remove("is-hidden");
   const tab = $("#guide-restore");
   if (tab) tab.hidden = true;
-  positionGuide();
+  layoutTutorial();
 }
 
 // Remove the box and the outlines, but remember where the user dragged it.
 function removeGuideBox() {
   document.body.style.paddingBottom = "";
-  guide.highlighted.forEach(function (element) { element.classList.remove("guide-target"); });
-  guide.highlighted = [];
+  clearHighlights();
+  guide.taskKey = null;
   if (guide.box) guide.box.remove();
   guide.box = null;
   guide.target = null;
@@ -339,8 +436,8 @@ function removeGuideBox() {
   document.body.classList.remove("guide-visible");
   const tab = $("#guide-restore");
   if (tab) tab.hidden = true;
-  window.removeEventListener("scroll", positionGuide, true);
-  window.removeEventListener("resize", positionGuide);
+  window.removeEventListener("scroll", layoutTutorial, true);
+  window.removeEventListener("resize", layoutTutorial);
 }
 
 function closeGuide() {
@@ -377,11 +474,11 @@ function showGuideStep(index) {
   const step = GUIDE_STEPS[index];
   const last = index === GUIDE_STEPS.length - 1;
 
-  const box = buildGuideBox("Step " + (index + 1) + " of " + GUIDE_STEPS.length, 
+  const box = buildGuideBox("Step " + (index + 1) + " of " + GUIDE_STEPS.length,
     '<div class="guide-title">' + escapeHtml(step.title) + "</div>" +
     '<p class="guide-text">' + escapeHtml(step.text) + "</p>" +
-    '<p class="guide-todo"><strong>What to do:</strong> ' + escapeHtml(step.todo) + "</p>" +
-    '<p class="guide-status" aria-live="polite"></p>' +
+    '<div class="guide-task" aria-live="polite"></div>' +
+    '<p class="guide-status"></p>' +
     '<p class="guide-warning" role="alert"></p>' +
     '<p class="guide-next-hint">Continue when you have completed this action \u2193</p>' +
     '<div class="guide-controls">' +
@@ -400,34 +497,12 @@ function showGuideStep(index) {
     });
   });
 
-  // Outline the main element (the note sits next to it) plus any extra ones.
-  const selectors = [step.target].concat(step.also || []);
-  selectors.forEach(function (selector) {
-    const element = $(selector);
-    if (isVisible(element)) {
-      element.classList.add("guide-target");
-      guide.highlighted.push(element);
-    }
-  });
-  const target = $(step.target);
-  if (isVisible(target)) {
-    guide.target = target;
-    if (isNarrowScreen() || step.place === "below") {
-      // Put the target near the top, so the note underneath does not hide it.
-      const headerHeight = $(".site-header").offsetHeight;
-      window.scrollTo(0, window.scrollY + target.getBoundingClientRect().top - headerHeight - 16);
-    } else {
-      target.scrollIntoView({ block: "center", behavior: "auto" });
-    }
-  }
-  refreshGuideStatus();
-  // Keep the user's dragged position, unless it would hide this step's target.
-  if (guide.moved && guide.target && boxWouldCover(guide.target)) guide.moved = false;
-  positionGuide();
-  window.addEventListener("scroll", positionGuide, true);
-  window.addEventListener("resize", positionGuide);
-  // Packets and panels move while a simulation runs, so re-place the arrows twice a second.
-  guide.pointerTimer = setInterval(updatePointers, 500);
+  renderTask();
+  window.addEventListener("scroll", layoutTutorial, true);
+  window.addEventListener("resize", layoutTutorial);
+  // Safety net while a simulation runs: re-check the task and re-place the arrow twice a second.
+  // (Every real action also calls refreshTutorial straight away.)
+  guide.pointerTimer = setInterval(renderTask, 500);
   $("[data-guide=next]", box).focus();
 }
 
@@ -473,46 +548,161 @@ function showGuideWarning() {
   guide.warningTimer = setTimeout(function () { warning.classList.remove("show"); }, 3500);
 }
 
-// Update the "complete / not complete" line and the look of the Next button.
-function refreshGuideStatus() {
+// Called by the lab page whenever something changes (protocol, checkbox, a simulation step).
+function refreshTutorial() {
+  renderTask();
+}
+
+// Keep the box, the outline, the arrow and the Next button in step with what the user has done.
+function renderTask() {
   if (!guide.box || guide.index < 0) return;
+  const step = GUIDE_STEPS[guide.index];
+  const last = guide.index === GUIDE_STEPS.length - 1;
   const complete = stepIsComplete(guide.index);
-  const status = $(".guide-status", guide.box);
+  const task = currentTask(guide.index);
+  const key = task ? step.tasks.indexOf(task) : (complete ? "complete" : "waiting");
+
+  // Next is never disabled (an early click shows the warning); it just looks locked.
+  // This is updated first, so the box already has its final size when it is placed.
   const next = $("[data-guide=next]", guide.box);
-
-  if (examinerBypassEnabled) status.textContent = "Examiner mode: you can move on freely.";
-  else if (complete) status.textContent = "✓ Section complete. Press " + next.textContent + " to continue.";
-  else status.textContent = "Not complete yet. Do the task above to unlock " + next.textContent + ".";
-  status.classList.toggle("is-complete", complete);
-
-  // Only the look changes; the button stays clickable so an early click can show the warning.
   next.classList.toggle("is-locked", !complete);
   $(".guide-next-hint", guide.box).hidden = complete;
+  $(".guide-status", guide.box).textContent = complete ? "" : "Not complete yet. Do the task above to unlock " + next.textContent + ".";
   if (complete) {
     $(".guide-warning", guide.box).classList.remove("show");
     clearTimeout(guide.warningTimer);
   }
+
+  // The task has changed: new instruction, new outline, and the box moves to the new target.
+  if (key !== guide.taskKey) {
+    guide.taskKey = key;
+    showTaskText(step, task, complete, last);
+    clearHighlights();
+    const target = task ? (task.spotlight ? $(task.spotlight) : taskTarget(task)) : null;
+    guide.target = isVisible(target) ? target : $(step.target);
+    if (guide.moved && guide.target && boxWouldCover(guide.target)) guide.moved = false;
+    if (guide.target && !guide.box.classList.contains("is-hidden")) scrollIntoViewIfNeeded(guide.target);
+    applyHighlights(task);
+    layoutTutorial();
+  } else {
+    applyHighlights(task);   // the target may have been redrawn (for example, the packet list)
+    // The page can move under the box (a simulation adds a line of text): if the box now
+    // covers its target, place it again. Otherwise only the arrow is refreshed.
+    const box = guide.box;
+    const covering = guide.target && !guide.moved && !box.classList.contains("is-hidden") &&
+      rectsOverlap(box.getBoundingClientRect(), guide.target.getBoundingClientRect());
+    if (covering) layoutTutorial();
+    else placePointers(true);
+  }
+
 }
 
-// The end of the lab: say so, and let the learner choose whether to continue.
-function showLabComplete() {
-  removeGuideBox();
-  guide.completionShown = true;
-  tutorialActive = false;   // the whole lab is done, so the other labs open again
-  saveTutorialState();
-  const box = buildGuideBox("Lab complete",
-    '<div class="guide-title">' + escapeHtml(LAB_COMPLETE.title) + "</div>" +
-    '<p class="guide-text">' + escapeHtml(LAB_COMPLETE.text) + "</p>" +
-    '<p class="guide-todo"><strong>Next lab: ' + escapeHtml(LAB_COMPLETE.nextName) + ".</strong> " +
-    escapeHtml(LAB_COMPLETE.nextTeaches) + "</p>" +
-    '<div class="guide-controls">' +
-    '<a class="btn btn-sm btn-primary" href="' + LAB_COMPLETE.nextUrl + '">Continue to ' + escapeHtml(LAB_COMPLETE.nextName) + "</a>" +
-    '<button class="btn btn-sm" data-guide="stay">Stay and explore</button>' +
-    "</div>");
-  $("[data-guide=stay]", box).addEventListener("click", closeGuide);
+// The "What to do" line, with a Got it button for reading tasks.
+function showTaskText(step, task, complete, last) {
+  const area = $(".guide-task", guide.box);
+  if (complete) {
+    const text = examinerBypassEnabled ? "Examiner mode: you can move on freely."
+      : step.doneText || ("\u2713 Section complete. Press " + (last ? "Finish" : "Next") + " to continue.");
+    area.innerHTML = '<p class="guide-todo is-complete">' + escapeHtml(text) + "</p>";
+    return;
+  }
+  if (!task) {
+    area.innerHTML = '<p class="guide-todo">Keep going with the lab to complete this section.</p>';
+    return;
+  }
+  area.innerHTML = '<p class="guide-todo"><strong>What to do:</strong> ' + escapeHtml(task.say) + "</p>" +
+    (task.read ? '<button class="btn btn-sm btn-primary guide-gotit" type="button">Got it</button>' : "");
+  if (task.read) {
+    $(".guide-gotit", area).addEventListener("click", function () { markTutorialEvent(task.read); });
+  }
+}
+
+// Outline what the current task is about (and make an output box stand out when explaining it).
+function applyHighlights(task) {
+  if (!task) return;
+  const target = taskTarget(task);
+  if (target && !target.classList.contains("guide-target")) {
+    target.classList.add("guide-target");
+    guide.highlighted.push(target);
+  }
+  const spot = task.spotlight ? $(task.spotlight) : null;
+  if (spot && !spot.classList.contains("guide-spotlight")) {
+    spot.classList.add("guide-spotlight");
+    guide.highlighted.push(spot);
+  }
+}
+
+function clearHighlights() {
+  guide.highlighted.forEach(function (element) { element.classList.remove("guide-target", "guide-spotlight"); });
+  guide.highlighted = [];
+}
+
+function scrollIntoViewIfNeeded(element) {
+  const rect = element.getBoundingClientRect();
+  const top = $(".site-header").offsetHeight;
+  if (rect.top < top + 8 || rect.bottom > window.innerHeight - 8) {
+    element.scrollIntoView({ block: "center", behavior: "auto" });
+  }
+}
+
+// Arrows first, then the box (kept clear of the arrows and the target), then any arrow
+// the box still covers is moved. Called when the task changes, on scroll and on resize.
+function layoutTutorial() {
+  const box = guide.box;
+  if (!box || box.classList.contains("is-hidden")) return;
+  if (guide.moved || isNarrowScreen() || guide.index < 0) {
+    positionGuide();
+    placePointers(true);
+    return;
+  }
+  placePointers(false);
   positionGuide();
-  window.addEventListener("resize", positionGuide);
-  $("[data-guide=stay]", box).focus();
+
+  // On a short window the box may have no free space beside the target. If both would fit
+  // with the target near the top of the window, scroll it there and place everything again.
+  const target = guide.target;
+  if (target && rectsOverlap(box.getBoundingClientRect(), target.getBoundingClientRect())) {
+    const headerHeight = $(".site-header").offsetHeight;
+    const needed = headerHeight + 16 + target.getBoundingClientRect().height + 14 + box.offsetHeight;
+    if (needed < window.innerHeight && Math.abs(target.getBoundingClientRect().top - headerHeight - 16) > 4) {
+      window.scrollTo(0, window.scrollY + target.getBoundingClientRect().top - headerHeight - 16);
+      placePointers(false);
+      positionGuide();
+    }
+  }
+  placePointers(true);
+}
+
+// A lab has been completed: say so, and let the learner choose what to do next.
+// Used by the tutorial (Lab 01) and by every other lab page (see updateSidebarProgress).
+function showLabComplete(slug) {
+  slug = slug || "http_https";
+  const position = LAB_LIST.findIndex(function (lab) { return lab.slug === slug; });
+  const lab = LAB_LIST[position];
+  const next = LAB_LIST[position + 1];   // undefined after the last lab
+  removeGuideBox();
+  if (slug === "http_https") {
+    guide.completionShown = true;
+    tutorialActive = false;   // the whole lab is done, so the other labs open again
+    saveTutorialState();
+  }
+
+  const box = buildGuideBox("Lab complete",
+    '<div class="guide-title">' + escapeHtml(lab.done_title) + "</div>" +
+    '<p class="guide-text">' + escapeHtml(lab.done_text) + "</p>" +
+    (next
+      ? '<p class="guide-todo"><strong>Next lab: ' + escapeHtml(next.title) + ".</strong> " + escapeHtml(next.summary) + "</p>"
+      : '<p class="guide-todo">That was the last lab. You can open any lab again from the index on the left.</p>') +
+    '<div class="guide-controls guide-complete-controls">' +
+    (next ? '<a class="btn btn-sm btn-primary" data-guide="continue" href="' + escapeHtml(next.url) + '">Continue to ' +
+      escapeHtml(next.title) + "</a>" : "") +
+    '<button class="btn btn-sm" type="button" data-guide="explore">Explore Freely</button>' +
+    "</div>");
+  // Explore Freely: close the box, with nothing left to restrict navigation.
+  $("[data-guide=explore]", box).addEventListener("click", endTutorial);
+  positionGuide();
+  window.addEventListener("resize", layoutTutorial);
+  $(next ? "[data-guide=continue]" : "[data-guide=explore]", box).focus();
 }
 
 /* ---------- Positioning ---------- */
@@ -531,7 +721,6 @@ function positionGuide() {
     document.body.style.paddingBottom = "";
     moveGuideTo(guide.savedLeft, guide.savedTop);
     box.className = "guide at-moved";
-    updatePointers();
     return;
   }
 
@@ -565,7 +754,6 @@ function positionGuide() {
     const aim = Math.min(rect.left + rect.width / 2, rect.left + 60) - parseFloat(box.style.left) - 5;
     box.style.setProperty("--arrow-x", Math.max(14, Math.min(aim, boxWidth - 24)) + "px");
   }
-  updatePointers();
 }
 
 // True if two rectangles overlap.
@@ -580,7 +768,6 @@ function rectsOverlap(a, b) {
 function chooseGuideSpot(targetRect, boxWidth, boxHeight) {
   const gap = 14;
   const minTop = $(".site-header").offsetHeight + 8;
-  const step = GUIDE_STEPS[guide.index];
   const sidebar = $("#sidebar");
   const leftEdge = isVisible(sidebar) ? sidebar.getBoundingClientRect().right + 8 : 8;
   const rightEdge = window.innerWidth - boxWidth - 16;
@@ -603,14 +790,12 @@ function chooseGuideSpot(targetRect, boxWidth, boxHeight) {
     });
   });
 
-  // The controls this step needs: what it highlights, what its arrows point at,
-  // and the simulation's Send / Next Step buttons.
-  const needed = [step.target].concat(step.also || []);
-  (step.pointers || []).forEach(function (pointer) { needed.push.apply(needed, pointer.to); });
-  needed.push("#player [data-action=start]", "#player [data-action=next]");
-  const neededRects = needed.map(function (selector) { return $(selector); })
+  // What must stay visible: the current task's elements, the simulation's Send and
+  // Next Step buttons, and the arrows already placed for this task.
+  const neededRects = $all(".guide-target, .guide-spotlight, #player [data-action=start], #player [data-action=next]")
     .filter(isVisible)
     .map(function (element) { return element.getBoundingClientRect(); });
+  const arrowRects = $all(".tut-pointer").map(function (arrow) { return arrow.getBoundingClientRect(); });
   const otherRects = $all("button, a, input, textarea, select, .packet, .net-node")
     .filter(function (element) { return isVisible(element) && !guide.box.contains(element); })
     .map(function (element) { return element.getBoundingClientRect(); });
@@ -626,9 +811,9 @@ function chooseGuideSpot(targetRect, boxWidth, boxHeight) {
     let cost = 0;
     if (rectsOverlap(area, targetRect)) cost += 1000;
     neededRects.forEach(function (rect) { if (rectsOverlap(area, rect)) cost += 20; });
+    arrowRects.forEach(function (rect) { if (rectsOverlap(area, rect)) cost += 300; });
     otherRects.forEach(function (rect) { if (rectsOverlap(area, rect)) cost += 1; });
-    if (candidate.side === "corner") cost += 0.5;                         // prefer beside the target
-    if (step.place && candidate.side !== placeToSide(step.place)) cost += 0.25;
+    if (candidate.side === "corner") cost += 0.5;   // prefer beside the target
 
     if (cost < lowestCost) {
       lowestCost = cost;
@@ -636,11 +821,6 @@ function chooseGuideSpot(targetRect, boxWidth, boxHeight) {
     }
   });
   return best;
-}
-
-// The steps say "below" for the bottom side; everything else uses the side's own name.
-function placeToSide(place) {
-  return place === "below" ? "bottom" : place;
 }
 
 // True if the box, at the position the user dragged it to, would overlap the element.
@@ -709,18 +889,18 @@ function removePointers() {
   $all(".pointer-fallback").forEach(function (element) { element.classList.remove("pointer-fallback"); });
 }
 
-// Draw the current step's arrows. Called on scroll, resize, drag and twice a second.
-function updatePointers() {
+// Draw the arrow for the current task (none once the step is complete).
+// avoidBox: keep clear of the tutorial box (false while the box itself is being placed).
+function placePointers(avoidBox) {
   removePointers();
-  const showing = guide.box && guide.index >= 0 && !guide.box.classList.contains("is-hidden");
+  const showing = guide.box && !guide.box.classList.contains("is-hidden");
   // The "Start here" box is not needed while the tutorial is on screen; hiding it gives arrows room.
-  document.body.classList.toggle("guide-visible", Boolean(guide.box) && !guide.box.classList.contains("is-hidden"));
-  if (!showing) return;
-  const step = GUIDE_STEPS[guide.index];
-  (step.pointers || []).forEach(function (pointer) {
-    const target = pointer.to.map(function (selector) { return $(selector); }).find(isVisible);
-    if (target) placePointer(target, pointer.text, pointer.sides);
-  });
+  document.body.classList.toggle("guide-visible", Boolean(showing));
+  if (!showing || guide.index < 0) return;
+  const task = currentTask(guide.index);
+  if (!task || !task.arrow) return;
+  const target = taskTarget(task);
+  if (target) placePointer(target, task.arrow, task.sides, avoidBox);
 }
 
 // Things an arrow must never cover.
@@ -739,7 +919,7 @@ function obstacleRect(element) {
 }
 
 // Try each side in order and use the first spot that is on screen and covers nothing.
-function placePointer(target, text, sides) {
+function placePointer(target, text, sides, avoidBox) {
   const pointer = document.createElement("div");
   pointer.className = "tut-pointer";
   document.body.appendChild(pointer);
@@ -748,6 +928,8 @@ function placePointer(target, text, sides) {
   const minTop = $(".site-header").offsetHeight + 4;
   const obstacles = $all(POINTER_OBSTACLES)
     .filter(function (element) {
+      if (!avoidBox && element.closest(".guide")) return false;
+      if (element.classList.contains("lesson-hint")) return false;   // blank while the tutorial shows
       return element !== pointer && isVisible(element) && !element.contains(target) && !target.contains(element);
     })
     .map(obstacleRect);
@@ -842,7 +1024,7 @@ function dragTo(x, y) {
   moveGuideTo(x - guide.drag.offsetX, y - guide.drag.offsetY);
   guide.savedLeft = parseFloat(guide.box.style.left);
   guide.savedTop = parseFloat(guide.box.style.top);
-  updatePointers();
+  placePointers(true);
 }
 
 function onMouseMove(event) {
@@ -882,6 +1064,13 @@ function setupGuide() {
     if (tutorialActive) hideGuide();
     else closeGuide();   // the "lab complete" message
   }, true);
+
+  // When the page changes size (a simulation adds a line of text, a panel fills in), check
+  // straight away that the box and arrow still sit in the right place.
+  const content = $(".content");
+  if (content && window.ResizeObserver) {
+    new ResizeObserver(function () { if (guide.box) renderTask(); }).observe(content);
+  }
 
   // One listener for every link on the page (sidebar, header, cards...). It runs in the
   // capture phase, so it sees the click before the browser follows the link.

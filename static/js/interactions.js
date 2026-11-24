@@ -87,6 +87,18 @@ function setupSidebar() {
 /* Progress tracking (stored by Python in the Flask session) */
 
 // Update the progress bar and tick marks in the sidebar.
+// Labs that show their own "completed" message: the tutorial (Lab 01) and the journey's
+// conclusion (Lab 02). Every other lab uses the shared box from tutorial.js.
+const LABS_WITH_OWN_COMPLETION = ["http_https", "journey"];
+
+// Which labs were already complete when the page loaded (from progress.py).
+const labWasComplete = {};
+document.addEventListener("DOMContentLoaded", function () {
+  $all(".nav a[data-module]").forEach(function (link) {
+    labWasComplete[link.dataset.module] = $(".status", link).textContent.trim() !== "";
+  });
+});
+
 function updateSidebarProgress(progress) {
   const percent = $("#sidebar-percent");
   const bar = $("#sidebar-bar");
@@ -99,6 +111,14 @@ function updateSidebarProgress(progress) {
     status.className = "status" + (module.complete ? " done" : module.done > 0 ? " partial" : "");
     status.title = module.done + " of " + module.total + " activities";
     status.textContent = module.complete ? "✓" : "";
+
+    // This page's lab has just been completed for the first time: offer the next lab.
+    const thisPage = module.slug === document.body.dataset.lab;
+    if (thisPage && module.complete && !labWasComplete[module.slug] &&
+        LABS_WITH_OWN_COMPLETION.indexOf(module.slug) < 0) {
+      showLabComplete(module.slug);
+    }
+    labWasComplete[module.slug] = module.complete;
   });
 }
 
@@ -587,6 +607,7 @@ class StepPlayer {
     this.finished = false;
     this.loading = false;
     this.token = 0;        // increases every time we jump, so a late "arrived" is ignored
+    this.visited = [];     // visited[i] is true once stage i has been shown
 
     this.buildControls();
     this.showIntro();
@@ -658,6 +679,7 @@ class StepPlayer {
       this.diagram.setNodes(data.nodes, data.extra_links);
       this.steps = data.steps;
       this.originalSteps = data.steps.slice();
+      this.visited = [];
       this.finished = false;
       this.loading = false;
       // Give the diagram one frame to lay out before the first packet moves.
@@ -749,6 +771,7 @@ class StepPlayer {
     this.token += 1;
     const myToken = this.token;
     this.index = index;
+    this.visited[index] = true;
     this.stepDone = false;
     this.paused = false;
     const step = this.steps[index];
@@ -793,7 +816,16 @@ class StepPlayer {
     const firstTime = !this.finished;
     this.finished = true;
     this.updateButtons();
-    if (firstTime) this.onFinish(this.steps);
+    // It only counts as finished if every stage was viewed, not just the last one
+    // (the progress dots allow jumping straight to the end).
+    if (firstTime && this.sawEveryStage()) this.onFinish(this.steps);
+  }
+
+  sawEveryStage() {
+    for (let i = 0; i < this.steps.length; i++) {
+      if (!this.visited[i]) return false;
+    }
+    return true;
   }
 
   /* ---------------- Rendering ---------------- */

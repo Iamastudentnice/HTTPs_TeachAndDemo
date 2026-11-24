@@ -36,8 +36,10 @@ def clean_text(value, default=""):
 
 @app.context_processor
 def add_progress_to_templates():
-    """Make progress information available in every template (for the sidebar)."""
-    return {"progress": progress.summarise_progress(session)}
+    """Make progress information available in every template (for the sidebar and the
+    "lab completed" box)."""
+    return {"progress": progress.summarise_progress(session),
+            "lab_info": progress.completion_info(url_for)}
 
 
 # --- Page routes ---
@@ -65,7 +67,8 @@ def http_https_page():
 @app.route("/journey")
 def journey_page():
     """Lab 2 page: the journey of a website."""
-    return render_template("journey.html", active="journey")
+    return render_template("journey.html", active="journey", this_lab=progress.find_module("journey"),
+                           next_lab=progress.next_module("journey"))
 
 
 @app.route("/tls-handshake")

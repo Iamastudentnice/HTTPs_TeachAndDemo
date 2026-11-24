@@ -257,7 +257,7 @@ input:focus, textarea:focus, select:focus { outline: 2px solid var(--accent); ou
 .output.empty { color: var(--faint); font-family: var(--font); font-size: 0.82rem; }
 .output-label {
   display: flex; align-items: center; justify-content: space-between; gap: 8px;
-  font-family: var(--mono); font-size: 0.68rem; color: var(--faint); font-weight: 500;
+  font-family: var(--mono); font-size: 0.74rem; color: var(--text); font-weight: 700;
   margin: 12px 0 5px; text-transform: uppercase; letter-spacing: 0.08em;
 }
 
@@ -307,7 +307,7 @@ table.compare td:first-child { color: var(--text-strong); font-weight: 500; }
 }
 .net-icon svg { width: 30px; height: 30px; }
 /* Device name: the main label, so it carries more weight than the address under it */
-.net-label { font-weight: 700; color: var(--text-strong); font-size: 0.92rem; letter-spacing: 0.005em; }
+.net-label { font-weight: 800; color: var(--text-strong); font-size: 1rem; letter-spacing: 0.005em; }
 .net-sublabel { font-family: var(--mono); font-size: 0.7rem; font-weight: 400; color: var(--muted); margin-top: 1px; }
 .net-state {
   display: inline-block; margin-top: 6px; padding: 1px 6px; min-height: 18px;
@@ -493,7 +493,7 @@ table.compare td:first-child { color: var(--text-strong); font-weight: 500; }
 .sim-panels { padding: 14px 18px 18px; border-top: 1px solid var(--line); background: var(--surface); }
 .view-box { background: var(--inset); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px; min-width: 0; }
 .view-box h4 {
-  font-family: var(--mono); font-size: 0.68rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em;
+  font-family: var(--mono); font-size: 0.74rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
   color: var(--muted); margin: 0 0 8px; display: flex; align-items: center; gap: 6px;
 }
 .view-box h4 .icon { width: 14px; height: 14px; }
@@ -681,7 +681,7 @@ details.more .more-body p:last-child { margin-bottom: 0; }
 .guide-title { font-weight: 600; color: var(--text-strong); margin: 4px 0 2px; }
 .guide-text { margin: 0; color: var(--text); }
 .guide-note { margin: 6px 0 0; font-size: 0.78rem; color: var(--muted); }
-.guide-controls { display: flex; gap: 6px; margin-top: 12px; }
+.guide-controls { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
 /* Next / Finish sits on the far right; padlocked Skip sits beside Back */
 .guide-controls .next { margin-left: auto; }
 .guide-controls .skip .icon { width: 13px; height: 13px; }
@@ -1022,3 +1022,22 @@ body.guide-visible .lesson-start { visibility: hidden; }
   .render-flow { grid-template-columns: 1fr; }
   .render-arrow { transform: rotate(90deg); justify-self: center; }
 }
+
+/* ---------- Tutorial: one task at a time, spotlight, completion box ---------- */
+
+.guide-task .guide-todo.is-complete { color: var(--green-text); font-weight: 600; }
+.guide-gotit { margin-top: 8px; }
+.guide-status:empty { display: none; }
+
+/* The output box the current task is explaining stands out */
+.guide-spotlight { outline: 3px solid var(--tutorial) !important; outline-offset: 4px; box-shadow: 0 0 0 7px var(--green-bg); }
+
+/* Completion box: buttons wrap and stay inside the box */
+.guide-complete-controls .btn { white-space: normal; text-align: center; }
+.guide-complete-controls .btn-primary { flex: 1 1 100%; }
+
+/* While the tutorial is on screen it is the only source of instructions: the page's own hint
+   line and pulsing highlights wait, so two different instructions never compete. */
+body.guide-visible .lesson-hint { color: transparent; }
+body.guide-visible .segmented button.is-next,
+body.guide-visible .checkbox.is-next { animation: none; background: transparent; color: inherit; outline: none; }
