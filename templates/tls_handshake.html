@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% block title %}TLS Handshake{% endblock %}
+{% block content %}
+<header class="page-header">
+  <div class="eyebrow">Exploration · Lab 2</div>
+  <h1>The TLS 1.3 Handshake</h1>
+  <p class="lead">Before any web data is sent, browser and server agree on secret keys and the server proves its
+    identity - in a single round trip. Every key below is generated live by Python.</p>
+</header>
+
+<section class="card sim-card">
+  <div class="net-diagram" id="diagram"></div>
+  <div class="diagram-legend">
+    <span><i style="background:var(--blue)"></i>Sent in the clear</span>
+    <span><i style="background:var(--green)"></i>Encrypted</span>
+    <span><i style="background:var(--grey)"></i>Not yet used</span>
+  </div>
+  <div id="player"></div>
+</section>
+
+<section class="section card" id="stage-card">
+  <div class="grid grid-2">
+    <div>
+      <div class="output-label">Who is communicating</div>
+      <p id="stage-who" class="muted">Start the handshake to see each stage.</p>
+      <div class="output-label">What is exchanged</div>
+      <pre class="output empty" id="stage-exchanged">-</pre>
+    </div>
+    <div>
+      <div class="output-label">Why this stage is necessary</div>
+      <p id="stage-why" class="muted">-</p>
+      <div class="output-label">Security purpose</div>
+      <div class="callout good" id="stage-purpose">-</div>
+      <ul class="small muted" id="stage-extra"></ul>
+    </div>
+  </div>
+</section>
+
+<section class="section grid grid-2">
+  <div class="card">
+    <h3>Ephemeral Diffie-Hellman in one picture</h3>
+    <div class="flow">
+      <div class="flow-box plain"><strong>Client</strong>private a · public A</div>
+      <span class="flow-arrow">⇄</span>
+      <div class="flow-box key"><strong>Only A and B travel</strong>public values</div>
+      <span class="flow-arrow">⇄</span>
+      <div class="flow-box plain"><strong>Server</strong>private b · public B</div>
+    </div>
+    <div class="flow">
+      <div class="flow-box cipher"><strong>Client computes</strong>X25519(a, B)</div>
+      <span class="flow-arrow">=</span>
+      <div class="flow-box cipher"><strong>Server computes</strong>X25519(b, A)</div>
+    </div>
+    <details class="more"><summary>Analogy: mixing paint</summary>
+      <div class="more-body">Both start with the same public base colour. Each mixes in a secret colour and swaps
+        the mixture. Adding their own secret again gives both the same final colour - but an observer who saw
+        only the mixtures cannot un-mix them.</div>
+    </details>
+  </div>
+  <div class="card">
+    <h3>Certificates authenticate - they don't encrypt your data</h3>
+    <p class="small">The certificate binds <code>shop.example.com</code> to a public key. In <em>CertificateVerify</em>
+      the server signs the handshake with the matching private key, proving it is genuine. Your page data is
+      encrypted with the symmetric session keys from the key exchange.</p>
+    <details class="more"><summary>Why "ephemeral" matters (forward secrecy)</summary>
+      <div class="more-body">The DH keys are thrown away after the session. Even if the server's long-term private
+        key is stolen later, recorded traffic cannot be decrypted.</div>
+    </details>
+    <details class="more"><summary>What this demo simplifies</summary>
+      <div class="more-body">Real TLS 1.3 derives keys through a longer HKDF key schedule that mixes in a hash of
+        every handshake message; here one HKDF step per key is shown. Key shares really are sent in ClientHello
+        and ServerHello - the "Key Exchange" stage shows the local computation.</div>
+    </details>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+/* Lab 2 - asks Python for a fresh handshake (new keys every time) and plays it. */
+document.addEventListener("DOMContentLoaded", function () {
+  const diagram = new NetworkDiagram($("#diagram"));
+  diagram.setNodes([
+    { id: "client", label: "Browser", sublabel: "TLS client", icon: "laptop", role: "client" },
+    { id: "server", label: "Web Server", sublabel: "shop.example.com", icon: "server", role: "server" },
+  ]);
+
+  // Fill in the who/what/why/purpose panel for a stage.
+  function showStage(panels) {
+    $("#stage-who").textContent = panels.who || "-";
+    const exchanged = $("#stage-exchanged");
+    exchanged.className = "output plain";
+    exchanged.textContent = (panels.exchanged || []).join("\n");
+    $("#stage-why").textContent = panels.why || "-";
+    $("#stage-purpose").textContent = panels.purpose || "-";
+    $("#stage-extra").innerHTML = (panels.extra || []).map(function (line) {
+      return "<li>" + escapeHtml(line) + "</li>";
+    }).join("");
+  }
+
+  new StepPlayer({
+    diagram: diagram,
+    mount: $("#player"),
+    startLabel: "Start handshake",
+    introTitle: "Seven stages, one secure connection",
+    introText: "Press Start handshake. Use Next / Previous to go at your own pace, or click a packet to inspect it.",
+    loadSteps: function () { return apiPost("/api/tls/handshake", {}); },
+    onStep: function (step) { showStage(step.panels); },
+    onFinish: function () { recordProgress("tls_handshake", "handshake"); },
+    onReset: function () {
+      showStage({ who: "Start the handshake to see each stage." });
+      $("#stage-exchanged").className = "output empty";
+      $("#stage-exchanged").textContent = "-";
+    },
+  });
+});
+</script>
+{% endblock %}

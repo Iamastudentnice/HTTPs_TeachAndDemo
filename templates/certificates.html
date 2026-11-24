@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}Certificate Explorer{% endblock %}
+{% block content %}
+<header class="page-header">
+  <div class="eyebrow">Exploration · Lab 4</div>
+  <h1>Digital Certificate Explorer</h1>
+  <p class="lead">A certificate is the website's passport. Pick a scenario and watch the browser run its four checks
+    on a real X.509 certificate. Click any field to learn what it means.</p>
+</header>
+
+<div class="grid" style="grid-template-columns: 260px minmax(0,1fr); align-items:start" id="cert-layout">
+  <aside>
+    <div class="card">
+      <h3>Scenarios</h3>
+      <div class="scenario-list" id="scenario-list">
+        {% for key, scenario in scenarios.items() %}
+        <button class="scenario-btn {{ 'active' if loop.first }}" data-scenario="{{ key }}">
+          <strong>{{ scenario.title }}</strong><span>{{ scenario.summary }}</span>
+        </button>
+        {% endfor %}
+      </div>
+    </div>
+    <div class="card">
+      <h3>Browser trust store</h3>
+      <p class="small muted">Root CAs this browser trusts. Untick one to see trust break.</p>
+      <div id="trust-store"></div>
+    </div>
+  </aside>
+
+  <div>
+    <div class="browser">
+      <div class="browser-bar">
+        <div class="browser-dots"><i></i><i></i><i></i></div>
+        <div class="address" id="address">
+          <svg><use href="#i-lock"/></svg><span>https://</span>
+          <input type="text" id="hostname" value="shop.example.com" aria-label="Hostname you are visiting">
+        </div>
+        <button class="btn btn-sm" id="visit">Visit</button>
+      </div>
+      <div class="browser-body" id="browser-body"><p class="muted">Loading…</p></div>
+    </div>
+
+    <div class="grid grid-2 section">
+      <div class="card">
+        <h3>Browser checks</h3>
+        <ul class="check-list" id="checks"></ul>
+      </div>
+      <div class="card">
+        <h3>Certificate chain</h3>
+        <p class="small muted">Trust flows from a root in the trust store, through the intermediate, to the site. Click to view each.</p>
+        <div class="chain" id="chain"></div>
+        <div class="callout field-help" id="field-help"><strong>Tip:</strong> click any certificate field below.</div>
+      </div>
+    </div>
+
+    <div class="cert section" id="certificate"></div>
+
+    <details class="more">
+      <summary>Certificate authorities, chains and trust stores</summary>
+      <div class="more-body">
+        <p><strong>Certificate Authority (CA):</strong> an organisation that checks you control a domain before signing a certificate for it.</p>
+        <p><strong>Chain:</strong> site certificate ← signed by intermediate CA ← signed by root CA. The browser verifies every signature with the issuer's public key.</p>
+        <p><strong>Trust store:</strong> the small list of root CAs shipped with your browser/OS. If the chain doesn't end there, the site is untrusted.</p>
+        <p><strong>Remember:</strong> a valid certificate only proves you reached the real owner of the domain. Phishing sites can get valid certificates for their own look-alike domains.</p>
+      </div>
+    </details>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Field explanations come from Python (certificates.FIELD_EXPLANATIONS).
+  const FIELD_EXPLANATIONS = {{ field_explanations | tojson }};
+</script>
+<script src="{{ url_for('static', filename='js/certificates.js') }}"></script>
+{% endblock %}

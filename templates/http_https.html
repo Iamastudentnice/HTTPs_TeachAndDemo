@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% block title %}HTTP vs HTTPS{% endblock %}
+{% block content %}
+<header class="page-header">
+  <div class="eyebrow">Exploration · Lab 1</div>
+  <h1>Understanding HTTP vs HTTPS</h1>
+  <p class="lead">HTTP is like sending a postcard: everyone who handles it can read it. HTTPS puts the same
+    message in a locked box that only you and the website can open.</p>
+</header>
+
+<div class="grid grid-4">
+  <div class="card">
+    <span class="tag tag-blue">HTTP</span>
+    <h3 style="margin-top:8px">HyperText Transfer Protocol</h3>
+    <p class="small muted">The language browsers and web servers use to request and send pages. It sends everything as readable text.</p>
+  </div>
+  <div class="card">
+    <span class="tag tag-green">HTTPS</span>
+    <h3 style="margin-top:8px">HTTP Secure</h3>
+    <p class="small muted">Exactly the same HTTP messages, but carried inside an encrypted TLS connection (port 443).</p>
+  </div>
+  <div class="card">
+    <span class="tag tag-cyan">TLS</span>
+    <h3 style="margin-top:8px">Transport Layer Security</h3>
+    <p class="small muted">Encrypts the data, detects tampering, and checks the server's certificate to prove its identity.</p>
+  </div>
+  <div class="card">
+    <span class="tag tag-yellow">Why?</span>
+    <h3 style="margin-top:8px">Why HTTPS exists</h3>
+    <p class="small muted">The web started on HTTP. Once people sent passwords and card numbers, anyone on the network path could read or alter them.</p>
+  </div>
+</div>
+
+<section class="section card sim-card">
+  <div class="sim-toolbar">
+    <div class="controls-row" style="width:100%">
+      <div>
+        <label class="field">Protocol</label>
+        <div class="segmented" id="protocol-toggle">
+          <button class="active is-http" data-value="HTTP">HTTP</button>
+          <button class="is-https" data-value="HTTPS">HTTPS</button>
+        </div>
+      </div>
+      <div>
+        <label class="field">Attacker simulation</label>
+        <label class="checkbox"><input type="checkbox" id="eavesdropper" checked> Eavesdropper on the Wi-Fi</label>
+      </div>
+      <div class="grow">
+        <label class="field" for="message">Login form - type your own (fake!) details</label>
+        <textarea id="message" rows="2">{{ default_message }}</textarea>
+      </div>
+    </div>
+  </div>
+  <div class="net-diagram" id="diagram"></div>
+  <div class="diagram-legend">
+    <span><i style="background:var(--blue)"></i>Unencrypted</span>
+    <span><i style="background:var(--green)"></i>Encrypted</span>
+    <span><i style="background:var(--red)"></i>Attacker</span>
+    <span><i style="background:var(--yellow)"></i>Warning</span>
+    <span><i style="background:var(--grey)"></i>Inactive</span>
+  </div>
+  <div id="player"></div>
+</section>
+
+<section class="section grid grid-2">
+  <div class="card">
+    <h3>Your browser</h3>
+    <div class="browser">
+      <div class="browser-bar">
+        <div class="browser-dots"><i></i><i></i><i></i></div>
+        <div class="address" id="address"><svg><use href="#i-unlock"/></svg><span class="addr-text">Not connected yet</span></div>
+      </div>
+      <div class="browser-body">
+        <div class="output-label">You typed</div>
+        <pre class="output plain" id="client-view">{{ default_message }}</pre>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <h3>What actually travels on the wire</h3>
+    <pre class="output empty" id="wire-view">Press "Send message" to see the data leave your browser.</pre>
+  </div>
+</section>
+
+<section class="section view-grid">
+  <div class="view-box attacker">
+    <h4><svg class="icon"><use href="#i-attacker"/></svg> Eavesdropper captured</h4>
+    <div id="attacker-status"></div>
+    <pre class="output empty" id="attacker-view">Nothing captured yet.</pre>
+  </div>
+  <div class="view-box server">
+    <h4><svg class="icon"><use href="#i-server"/></svg> Server received</h4>
+    <pre class="output empty" id="server-view">Nothing received yet.</pre>
+  </div>
+  <div class="view-box">
+    <h4><svg class="icon"><use href="#i-packets"/></svg> Packet log (click to inspect)</h4>
+    <ul class="packet-log" id="packet-log"></ul>
+  </div>
+</section>
+
+<section class="section card">
+  <h2>HTTP vs HTTPS at a glance</h2>
+  <div style="overflow-x:auto">
+    <table class="compare">
+      <thead><tr><th>Feature</th><th class="col-http">HTTP</th><th class="col-https">HTTPS</th></tr></thead>
+      <tbody>
+      {% for row in comparison %}
+        <tr><td>{{ row.feature }}</td><td>{{ row.http }}</td><td>{{ row.https }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="callout">
+    <strong>How HTTPS protects data in transit:</strong> before any HTTP data is sent, TLS agrees a fresh secret
+    key with the server (Module 2), checks the server's certificate (Module 4), then encrypts every request and
+    response with authenticated encryption, so it can't be read <em>or</em> silently changed on the way.
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/http_https.js') }}"></script>
+{% endblock %}

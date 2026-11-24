@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block title %}Overview{% endblock %}
+{% block content %}
+<header class="page-header">
+  <div class="eyebrow">Interactive HTTPS demonstration</div>
+  <h1>How HTTPS protects your data - and what happens without it</h1>
+  <p class="lead">HTTP is a postcard anyone can read. HTTPS is a locked, tamper-proof box that only you and the
+    real website can open. Choose how you want to explore it.</p>
+</header>
+
+<div class="mode-cards">
+  <a class="card mode-card primary" href="{{ url_for('presentation_page') }}">
+    <h2><svg class="icon" style="color:var(--green)"><use href="#i-play"/></svg> Presentation Mode</h2>
+    <p>A guided, timed two-minute demonstration for a teacher or examiner. Runs by itself with a visible timer.</p>
+    <ul class="activity-list">
+      <li>0:00 · Introduction</li>
+      <li>0:20 · HTTP vs HTTPS</li>
+      <li>0:45 · TLS handshake</li>
+      <li>1:10 · Man-in-the-Middle attack</li>
+      <li>1:45 · Conclusion</li>
+    </ul>
+    <span class="btn btn-green" style="align-self:flex-start;margin-top:6px">Start the 2-minute demo</span>
+  </a>
+  <div class="card mode-card">
+    <h2><svg class="icon" style="color:var(--cyan)"><use href="#i-eye"/></svg> Exploration Mode</h2>
+    <p>Hands-on labs with the full technical detail. Explore at your own pace - no time limit.</p>
+    <div class="progress-bar" style="margin-top:4px"><span style="width: {{ progress.percent }}%"></span></div>
+    <span class="small muted">{{ progress.percent }}% explored · {{ progress.completed_modules }}/{{ progress.total_modules }} labs complete</span>
+    <a class="btn" href="{{ url_for('mitm_page') }}" style="align-self:flex-start;margin-top:6px"><svg class="icon"><use href="#i-attacker"/></svg> Highlight: MITM attack lab</a>
+  </div>
+</div>
+
+<h2>Exploration labs</h2>
+<div class="grid grid-3">
+  {% for module in progress.modules %}
+  <a class="card module-card" href="{{ url_for(module.endpoint) }}">
+    <div class="module-top">
+      <span class="module-icon"><svg class="icon"><use href="#i-{{ module.icon }}"/></svg></span>
+      <div>
+        <div class="module-num">LAB {{ module.number }}</div>
+        <h3>{{ module.title }}</h3>
+      </div>
+      {% if module.complete %}<span class="tag tag-green" style="margin-left:auto">Explored</span>{% endif %}
+    </div>
+    <p>{{ module.summary }}</p>
+    <div class="module-meta"><span>{{ module.done }} / {{ module.total }} activities</span></div>
+    <div class="progress-bar"><span style="width: {{ (100 * module.done / module.total) | round | int }}%"></span></div>
+  </a>
+  {% endfor %}
+</div>
+
+<section class="section grid grid-2">
+  <div class="card">
+    <div class="card-title"><svg class="icon"><use href="#i-shield"/></svg><h3>The three jobs of TLS</h3></div>
+    <ul class="check-list">
+      <li class="pass"><span class="mark">1</span><div><strong>Confidentiality</strong>Data is encrypted, so eavesdroppers see only ciphertext.</div></li>
+      <li class="pass"><span class="mark">2</span><div><strong>Integrity</strong>Authenticated encryption detects any change made in transit.</div></li>
+      <li class="pass"><span class="mark">3</span><div><strong>Authentication</strong>The certificate proves the server controls the domain name.</div></li>
+    </ul>
+    <details class="more"><summary>What HTTPS does not do</summary>
+      <div class="more-body">It does not prove a website is honest (scam sites have padlocks too), it cannot protect a
+        device that already has malware, and it does not hide which servers you connect to.</div>
+    </details>
+  </div>
+  <div class="card">
+    <div class="card-title"><svg class="icon"><use href="#i-packets"/></svg><h3>How this app works</h3></div>
+    <p class="small">Like a restaurant: the <strong>page</strong> is the dining room, <strong>JavaScript</strong>
+      is the waiter, <strong>Python</strong> is the kitchen.</p>
+    <div class="flow">
+      <div class="flow-box plain"><strong>Browser</strong>you click Start</div>
+      <span class="flow-arrow">→</span>
+      <div class="flow-box key"><strong>Flask API</strong>JSON request</div>
+      <span class="flow-arrow">→</span>
+      <div class="flow-box cipher"><strong>Python</strong>runs the simulation</div>
+    </div>
+    <p class="small muted" style="margin-top:10px">Python builds each simulation as a list of steps (real ciphertext, real
+      key exchange, real certificate checks) and returns it as JSON. JavaScript only animates it.</p>
+    <button class="btn btn-sm" id="reset-progress"><svg class="icon"><use href="#i-replay"/></svg> Reset exploration progress</button>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  document.getElementById("reset-progress").addEventListener("click", async function () {
+    if (!confirm("Reset your exploration progress?")) return;
+    await apiPost("/api/progress/reset");
+    window.location.reload();
+  });
+});
+</script>
+{% endblock %}

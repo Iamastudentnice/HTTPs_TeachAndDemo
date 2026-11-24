@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+{% block title %}Encryption Lab{% endblock %}
+{% block content %}
+<header class="page-header">
+  <div class="eyebrow">Exploration · Lab 3</div>
+  <h1>Encryption Laboratory</h1>
+  <p class="lead">Type your own text and run real cryptography (Python's <code>cryptography</code> library) on it.</p>
+</header>
+
+<div class="tabs" id="crypto-tabs">
+  <button class="active" data-tab="symmetric"><svg class="icon"><use href="#i-key"/></svg> Symmetric (AES)</button>
+  <button data-tab="asymmetric"><svg class="icon"><use href="#i-lock"/></svg> Public / private keys (RSA)</button>
+  <button data-tab="hashing"><svg class="icon"><use href="#i-packets"/></svg> Hashing (SHA-256)</button>
+  <button data-tab="signature"><svg class="icon"><use href="#i-certificate"/></svg> Digital signatures</button>
+</div>
+
+<!-- Symmetric -->
+<div class="tab-panel active" data-panel="symmetric">
+  <div class="grid grid-2">
+    <div class="card">
+      <h3>One key locks and unlocks</h3>
+      <p class="small muted">Like a house key: the same key encrypts and decrypts. TLS uses AES-GCM or ChaCha20 for all
+        your page data because it is very fast.</p>
+      <label class="field" for="sym-text">Your message</label>
+      <textarea id="sym-text" rows="3">Meet me at the library at 5pm</textarea>
+      <div class="controls-row" style="margin-top:10px">
+        <button class="btn btn-primary" id="sym-encrypt"><svg class="icon"><use href="#i-lock"/></svg> Encrypt (new random key)</button>
+        <button class="btn" id="sym-decrypt" disabled><svg class="icon"><use href="#i-unlock"/></svg> Decrypt</button>
+      </div>
+      <div class="controls-row" style="margin-top:8px">
+        <button class="btn btn-red btn-sm" id="sym-tamper" disabled>Attacker: flip a byte of ciphertext</button>
+        <button class="btn btn-red btn-sm" id="sym-wrongkey" disabled>Try a wrong key</button>
+      </div>
+      <div id="sym-result" style="margin-top:12px"></div>
+    </div>
+    <div class="card">
+      <div class="flow">
+        <div class="flow-box plain"><strong>Plaintext</strong>readable</div><span class="flow-arrow">→</span>
+        <div class="flow-box key"><strong>AES-256-GCM</strong>+ key + nonce</div><span class="flow-arrow">→</span>
+        <div class="flow-box cipher"><strong>Ciphertext</strong>+ auth tag</div>
+      </div>
+      <div class="output-label">Key (256-bit, secret)</div><pre class="output empty" id="sym-key">-</pre>
+      <div class="output-label">Nonce (96-bit, used once)</div><pre class="output empty" id="sym-nonce">-</pre>
+      <div class="output-label">Ciphertext + 16-byte authentication tag <span id="sym-tampered"></span></div>
+      <pre class="output empty" id="sym-cipher">-</pre>
+      <details class="more"><summary>Why does tampering fail?</summary>
+        <div class="more-body">GCM computes an authentication tag over the ciphertext. Change one bit and the tag no longer
+          matches, so decryption refuses to return anything. This is the "integrity" in TLS.</div>
+      </details>
+    </div>
+  </div>
+</div>
+
+<!-- Asymmetric -->
+<div class="tab-panel" data-panel="asymmetric">
+  <div class="grid grid-2">
+    <div class="card">
+      <h3>A post box with a slot</h3>
+      <p class="small muted">Anyone can drop a letter in through the slot (<strong>public key</strong>), but only the
+        owner's key opens the box (<strong>private key</strong>).</p>
+      <button class="btn btn-primary" id="rsa-generate"><svg class="icon"><use href="#i-key"/></svg> Generate RSA-2048 key pair</button>
+      <label class="field" for="rsa-text" style="margin-top:12px">Message (max ~190 bytes)</label>
+      <input type="text" id="rsa-text" value="The secret code is 4471">
+      <div class="controls-row" style="margin-top:10px">
+        <button class="btn" id="rsa-encrypt" disabled><svg class="icon"><use href="#i-lock"/></svg> Encrypt with PUBLIC key</button>
+        <button class="btn btn-green" id="rsa-decrypt" disabled><svg class="icon"><use href="#i-unlock"/></svg> Decrypt with PRIVATE key</button>
+        <button class="btn btn-red btn-sm" id="rsa-wrong" disabled>Decrypt with someone else's private key</button>
+      </div>
+      <div id="rsa-result" style="margin-top:12px"></div>
+      <div class="callout small">TLS 1.3 does <strong>not</strong> encrypt data with RSA. Asymmetric keys are used for the
+        key exchange (Diffie-Hellman) and signatures; the data itself uses fast symmetric AES.</div>
+    </div>
+    <div class="card">
+      <div class="output-label">Public key (share with everyone)</div><pre class="output empty" id="rsa-public">-</pre>
+      <details class="more"><summary>Show private key (never share!)</summary>
+        <div class="more-body"><pre class="output danger" id="rsa-private">-</pre></div>
+      </details>
+      <div class="output-label">Ciphertext</div><pre class="output empty" id="rsa-cipher">-</pre>
+    </div>
+  </div>
+</div>
+
+<!-- Hashing -->
+<div class="tab-panel" data-panel="hashing">
+  <div class="grid grid-2">
+    <div class="card">
+      <h3>A fingerprint, not a lock</h3>
+      <p class="small muted">A hash turns any input into a fixed-size fingerprint. There is <strong>no key</strong> and
+        <strong>no way back</strong> - hashing is not encryption.</p>
+      <label class="field" for="hash-a">Input A</label>
+      <input type="text" id="hash-a" value="Hello world">
+      <label class="field" for="hash-b" style="margin-top:8px">Input B (change one character)</label>
+      <input type="text" id="hash-b" value="Hello world!">
+      <div class="controls-row" style="margin-top:10px">
+        <select id="hash-algorithm" style="width:auto">
+          {% for name in hash_algorithms %}<option>{{ name }}</option>{% endfor %}
+        </select>
+        <button class="btn btn-primary" id="hash-run">Hash both</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="output-label">Hash of A</div><pre class="output empty" id="hash-out-a">-</pre>
+      <div class="output-label">Hash of B</div><pre class="output empty" id="hash-out-b">-</pre>
+      <div id="hash-compare" class="small" style="margin-top:10px"></div>
+    </div>
+  </div>
+  <div class="card section">
+    <h3>Encryption vs hashing</h3>
+    <div style="overflow-x:auto"><table class="compare">
+      <thead><tr><th></th><th>Encryption</th><th>Hashing</th></tr></thead>
+      <tbody>
+        <tr><td>Uses a key?</td><td>Yes</td><td>No</td></tr>
+        <tr><td>Reversible?</td><td>Yes - with the right key</td><td>No - one-way</td></tr>
+        <tr><td>Output size</td><td>Grows with the input</td><td>Always fixed (e.g. 256 bits)</td></tr>
+        <tr><td>Used for</td><td>Keeping data secret</td><td>Fingerprints, integrity checks, signatures, password storage</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+</div>
+
+<!-- Signatures -->
+<div class="tab-panel" data-panel="signature">
+  <div class="grid grid-2">
+    <div class="card">
+      <h3>A wax seal only one ring can make</h3>
+      <p class="small muted">Sign with the <strong>private</strong> key; anyone verifies with the <strong>public</strong>
+        key. Certificates and the TLS CertificateVerify message work this way.</p>
+      <button class="btn btn-primary" id="sig-generate"><svg class="icon"><use href="#i-key"/></svg> Generate Ed25519 key pair</button>
+      <label class="field" for="sig-message" style="margin-top:12px">Message to sign</label>
+      <input type="text" id="sig-message" value="I, the server, own shop.example.com">
+      <button class="btn" id="sig-sign" style="margin-top:10px" disabled>Sign with PRIVATE key</button>
+      <label class="field" for="sig-received" style="margin-top:12px">Message as received (try editing it)</label>
+      <input type="text" id="sig-received" value="" disabled>
+      <button class="btn btn-green" id="sig-verify" style="margin-top:10px" disabled>Verify with PUBLIC key</button>
+      <div id="sig-result" style="margin-top:12px"></div>
+    </div>
+    <div class="card">
+      <div class="output-label">Public key</div><pre class="output empty" id="sig-public">-</pre>
+      <div class="output-label">Signature (64 bytes)</div><pre class="output empty" id="sig-signature">-</pre>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/encryption.js') }}"></script>
+{% endblock %}

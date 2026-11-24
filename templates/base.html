@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}HTTPS Learning Lab{% endblock %} · HTTPS &amp; TLS Lab</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link rel="icon" href="{{ url_for('static', filename='images/favicon.svg') }}" type="image/svg+xml">
+</head>
+<body class="{% block body_class %}{% endblock %}">
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-laptop" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="11" rx="1.5"/><path d="M2 19.5h20"/></symbol>
+    <symbol id="i-server" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="7.5" rx="1.5"/><rect x="4" y="13.5" width="16" height="7.5" rx="1.5"/><path d="M8 6.8h.01M8 17.3h.01M12 6.8h4M12 17.3h4"/></symbol>
+    <symbol id="i-attacker" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.5c-4.2 0-7 3.6-7 8.2V21h14V10.7c0-4.6-2.8-8.2-7-8.2z"/><path d="M8.5 11.5l2.3 1M15.5 11.5l-2.3 1M9.5 16.5h5"/></symbol>
+    <symbol id="i-router" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="13" width="18" height="7" rx="2"/><path d="M7 16.5h.01M11 16.5h.01M8.5 9a5 5 0 0 1 7 0M6 6.2a8.6 8.6 0 0 1 12 0"/></symbol>
+    <symbol id="i-globe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></symbol>
+    <symbol id="i-handshake" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h14l-3.5-3.5M20 16H6l3.5 3.5"/></symbol>
+    <symbol id="i-key" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="7.5" cy="15.5" r="4"/><path d="M10.5 12.5l9-9M16 7l2.5 2.5M13.5 9.5l2 2"/></symbol>
+    <symbol id="i-certificate" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 17H4.5A1.5 1.5 0 0 1 3 15.5v-11A1.5 1.5 0 0 1 4.5 3h15A1.5 1.5 0 0 1 21 4.5v6"/><path d="M7 8h10M7 11.5h5"/><circle cx="17" cy="15.5" r="3"/><path d="M15.3 18l-.8 3.5 2.5-1.2 2.5 1.2-.8-3.5"/></symbol>
+    <symbol id="i-packets" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="4" rx="1"/><rect x="3" y="10" width="18" height="4" rx="1"/><rect x="3" y="16" width="18" height="4" rx="1"/><path d="M6 6h.01M6 12h.01M6 18h.01"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7.5a4 4 0 0 1 8 0V11"/></symbol>
+    <symbol id="i-unlock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7.5a4 4 0 0 1 7.6-1.8"/></symbol>
+    <symbol id="i-home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7M5.5 9.5V20h13V9.5"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 5-3.4 8-8 9-4.6-1-8-4-8-9V6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></symbol>
+    <symbol id="i-warning" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5l9.5 16.5h-19z"/><path d="M12 10v4.5M12 17.5h.01"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l12.5-7.5z"/></symbol>
+    <symbol id="i-pause" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4.5" width="4" height="15" rx="1"/><rect x="14" y="4.5" width="4" height="15" rx="1"/></symbol>
+    <symbol id="i-next" viewBox="0 0 24 24" fill="currentColor"><path d="M5 5v14l10-7z"/><rect x="16" y="5" width="3" height="14" rx="1"/></symbol>
+    <symbol id="i-prev" viewBox="0 0 24 24" fill="currentColor"><path d="M19 5v14L9 12z"/><rect x="5" y="5" width="3" height="14" rx="1"/></symbol>
+    <symbol id="i-replay" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1"/><path d="M3.5 4v5h5"/></symbol>
+    <symbol id="i-stop" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="i-gateway" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="13" width="18" height="7" rx="2"/><path d="M7 16.5h.01M11 16.5h.01M12 13V4M8.5 7.5L12 4l3.5 3.5"/></symbol>
+  </defs>
+</svg>
+
+<div class="app">
+  <aside class="sidebar" id="sidebar">
+    <a class="brand" href="{{ url_for('index') }}">
+      <span class="brand-mark"><svg class="icon"><use href="#i-shield"/></svg></span>
+      <span>HTTPS Learning Lab<small>TLS &amp; MITM training platform</small></span>
+    </a>
+    <nav class="nav" aria-label="Modules">
+      <a href="{{ url_for('index') }}" class="{{ 'active' if active == 'home' }}">
+        <svg class="icon"><use href="#i-home"/></svg> Overview
+      </a>
+      <div class="nav-label">Presentation mode</div>
+      <a href="{{ url_for('presentation_page') }}" class="nav-present {{ 'active' if active == 'present' }}">
+        <svg class="icon"><use href="#i-play"/></svg> 2-minute demo
+      </a>
+      <div class="nav-label">Exploration mode</div>
+      {% for module in progress.modules %}
+        <a href="{{ url_for(module.endpoint) }}" data-module="{{ module.slug }}" class="{{ 'active' if active == module.slug }}">
+          <span class="num">{{ module.number }}</span>
+          <svg class="icon"><use href="#i-{{ module.icon }}"/></svg>
+          {{ module.title }}
+          <span class="status {{ 'done' if module.complete else ('partial' if module.done > 0) }}"
+                title="{{ module.done }} of {{ module.total }} activities">
+            {% if module.complete %}<svg><use href="#i-check"/></svg>{% endif %}
+          </span>
+        </a>
+      {% endfor %}
+    </nav>
+    <div class="sidebar-progress">
+      <div class="row"><span>Exploration progress</span><strong id="sidebar-percent">{{ progress.percent }}%</strong></div>
+      <div class="progress-bar"><span id="sidebar-bar" style="width: {{ progress.percent }}%"></span></div>
+    </div>
+  </aside>
+  <div class="overlay" id="overlay"></div>
+
+  <div class="main">
+    <header class="topbar">
+      <button class="icon-btn" id="menu-button" aria-label="Open navigation"><svg class="icon"><use href="#i-menu"/></svg></button>
+      <span class="brand-mini">HTTPS Learning Lab</span>
+    </header>
+    <main class="content">
+      {% block content %}{% endblock %}
+      <p class="footer-note">
+        Every network, packet, certificate and attack in this lab is simulated inside this application.
+        No real traffic is intercepted and no external systems are contacted. Cryptographic values
+        (ciphertexts, hashes, keys, signatures, certificates) are generated for real by Python's
+        <code>cryptography</code> library.
+      </p>
+    </main>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+  <div class="modal">
+    <div class="modal-head">
+      <span id="modal-tag"></span>
+      <h3 id="modal-title">Packet details</h3>
+      <button class="icon-btn" id="modal-close" aria-label="Close"><svg class="icon"><use href="#i-x"/></svg></button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+  </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/interactions.js') }}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>
