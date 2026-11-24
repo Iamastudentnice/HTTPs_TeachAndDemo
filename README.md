@@ -5,16 +5,56 @@ All networks and attacks are simulated; the cryptography is real (Python `crypto
 
 ## Run it
 
-Requires Python 3.10+.
+Requires Python 3.10 or newer (check with `python3 --version`; download from python.org if needed).
+
+### macOS / Linux (Terminal)
+
+First time:
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate        # Windows: .venv\Scripts\Activate.ps1
+cd ~/Downloads/https_learning_lab
+python3 -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
 python app.py
 ```
 
-Open http://127.0.0.1:5000
+Every time after that:
+
+```bash
+cd ~/Downloads/https_learning_lab
+source .venv/bin/activate
+python app.py
+```
+
+### Windows (PowerShell)
+
+First time:
+
+```powershell
+cd $HOME\Downloads\https_learning_lab
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+python app.py
+```
+
+Every time after that: run the `cd`, `Activate.ps1` and `python app.py` lines.
+
+### Open the app
+
+Go to http://127.0.0.1:5000 in your browser. Keep the terminal window open while using it;
+press `Ctrl + C` in the terminal to stop the app.
+
+### Troubleshooting
+
+- **macOS: "Address already in use" or a "403 Forbidden" page** – AirPlay Receiver also uses
+  port 5000. Turn it off in System Settings → General → AirDrop & Handoff → AirPlay Receiver,
+  or change `port=5000` to `port=5050` on the last line of `app.py` and open
+  http://127.0.0.1:5050 instead.
+- **`python3: command not found`** – install Python from python.org, then reopen the terminal.
+- **Windows: "running scripts is disabled"** – run
+  `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` once, then activate again.
 
 ## Modes
 
