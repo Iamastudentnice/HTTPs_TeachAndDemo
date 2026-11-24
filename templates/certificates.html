@@ -2,16 +2,16 @@
 {% block title %}Certificate Explorer{% endblock %}
 {% block content %}
 <header class="page-header">
-  <div class="eyebrow">Exploration · Lab 4</div>
-  <h1>Digital Certificate Explorer</h1>
-  <p class="lead">A certificate is the website's passport. Pick a scenario and watch the browser run its four checks
-    on a real X.509 certificate. Click any field to learn what it means.</p>
+  <div class="eyebrow">Lab 05 · Certificate explorer</div>
+  <h1>Certificates Prove Who You Reached</h1>
+  <p class="lead">Pick a scenario and watch the browser's four checks pass or fail.</p>
 </header>
 
-<div class="grid" style="grid-template-columns: 260px minmax(0,1fr); align-items:start" id="cert-layout">
+<div class="cert-layout" id="cert-layout">
   <aside>
     <div class="card">
       <h3>Scenarios</h3>
+      <p class="instruction">Select a scenario.</p>
       <div class="scenario-list" id="scenario-list">
         {% for key, scenario in scenarios.items() %}
         <button class="scenario-btn {{ 'active' if loop.first }}" data-scenario="{{ key }}">
@@ -22,7 +22,7 @@
     </div>
     <div class="card">
       <h3>Browser trust store</h3>
-      <p class="small muted">Root CAs this browser trusts. Untick one to see trust break.</p>
+      <p class="instruction">Untick a root CA to break trust.</p>
       <div id="trust-store"></div>
     </div>
   </aside>
@@ -47,16 +47,16 @@
       </div>
       <div class="card">
         <h3>Certificate chain</h3>
-        <p class="small muted">Trust flows from a root in the trust store, through the intermediate, to the site. Click to view each.</p>
+        <p class="instruction">Click a certificate to view its fields.</p>
         <div class="chain" id="chain"></div>
-        <div class="callout field-help" id="field-help"><strong>Tip:</strong> click any certificate field below.</div>
       </div>
     </div>
 
-    <div class="cert section" id="certificate"></div>
+    <p class="instruction section">Select a field to see what it means.</p>
+    <div class="cert" id="certificate"></div>
 
     <details class="more">
-      <summary>Certificate authorities, chains and trust stores</summary>
+      <summary>Technical details: certificate authorities, chains and trust stores</summary>
       <div class="more-body">
         <p><strong>Certificate Authority (CA):</strong> an organisation that checks you control a domain before signing a certificate for it.</p>
         <p><strong>Chain:</strong> site certificate ← signed by intermediate CA ← signed by root CA. The browser verifies every signature with the issuer's public key.</p>

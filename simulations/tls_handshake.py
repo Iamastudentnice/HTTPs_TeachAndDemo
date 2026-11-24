@@ -161,7 +161,7 @@ def build_handshake_steps(message="GET /account HTTP/1.1"):
         ],
         "A certificate is only useful if the browser actually validates it.",
         "Prevents impersonation. If any check fails the browser shows a warning and "
-        "stops the connection (Module 4 lets you break each check).",
+        "stops the connection (Lab 05 lets you break each check).",
         highlight={CLIENT: "secure"},
     ))
 

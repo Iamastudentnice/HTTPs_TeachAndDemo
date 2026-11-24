@@ -2,23 +2,36 @@
 {% block title %}MITM Attack Lab{% endblock %}
 {% block content %}
 <header class="page-header">
-  <div class="eyebrow">Exploration · Lab 5 · Highlight</div>
-  <h1>Man-in-the-Middle Attack Laboratory</h1>
-  <p class="lead">You are the attacker, sitting between the victim and the server. Every packet passes through
-    you. What can you read, change or fake - and when does HTTPS stop you?</p>
+  <div class="eyebrow">Lab 06 · <span class="attack">Featured</span></div>
+  <h1>The Attacker Sits in the Middle</h1>
+  <p class="lead">Every packet passes through the attacker. See what HTTPS stops - and what it does not.</p>
 </header>
 
 <div class="card">
-  <label class="field">Scenario</label>
-  <div class="segmented scenario-tabs" id="scenario-toggle">
-    {% for key, title in scenarios.items() %}
-      <button data-value="{{ key }}" class="{{ 'active' if key == 'http_mitm' }} {{ 'is-http' if key == 'normal_http' else ('is-https' if key == 'normal_https' else 'is-attack') }}">{{ title }}</button>
+  <p class="instruction">Choose a scenario, then press Start Simulation below.</p>
+  {% set groups = [("Baseline - no attacker", ["normal_http", "normal_https"]),
+                   ("Interception", ["http_mitm", "https_mitm"]),
+                   ("Impersonation &amp; downgrade", ["cert_spoof", "ssl_strip", "arp"])] %}
+  <div class="scenario-groups" id="scenario-toggle">
+    {% for label, keys in groups %}
+    <div class="scenario-group">
+      <div class="group-label">{{ label | safe }}</div>
+      <div class="segmented scenario-tabs">
+        {% for key in keys %}
+        <button data-value="{{ key }}" class="{{ 'active' if key == start_scenario }} {{ 'is-http' if key == 'normal_http' else ('is-https' if key == 'normal_https' else 'is-attack') }}">{{ scenarios[key] }}</button>
+        {% endfor %}
+      </div>
+    </div>
     {% endfor %}
   </div>
-  <p class="small" style="margin:10px 0 0" id="scenario-goal"></p>
 
-  <div class="option-panel section" style="margin-top:14px">
-    <div class="grow" id="message-group" style="flex:1;min-width:240px">
+  <dl class="mode-key">
+    <dt>Passive</dt><dd>Watches and copies traffic. Encryption defeats it.</dd>
+    <dt>Active</dt><dd>Modifies, injects or impersonates. Certificate checks and HSTS defeat it.</dd>
+  </dl>
+
+  <div class="option-panel" style="margin-top:14px">
+    <div id="message-group" style="flex:1;min-width:240px">
       <label class="field" for="message">Victim's message
         <button class="btn btn-sm" data-preset="login" style="margin-left:6px">Login</button>
         <button class="btn btn-sm" data-preset="payment">Payment</button>
@@ -27,14 +40,14 @@
     </div>
 
     <div data-for="http_mitm">
-      <label class="checkbox"><input type="checkbox" id="modify" checked> Attacker modifies the message</label>
+      <label class="checkbox"><input type="checkbox" id="modify" checked> Attacker modifies the message (active)</label>
       <div class="controls-row" style="margin-top:6px">
-        <div><label class="field" for="find">Replace</label><input type="text" id="find" value="Brian" style="width:130px"></div>
+        <div><label class="field" for="find">Replace</label><input type="text" id="find" value="John Doe" style="width:130px"></div>
         <div><label class="field" for="replace">with</label><input type="text" id="replace" value="Mallory" style="width:130px"></div>
       </div>
     </div>
     <div data-for="https_mitm">
-      <label class="checkbox"><input type="checkbox" id="tamper"> Attacker flips bits in the ciphertext</label>
+      <label class="checkbox"><input type="checkbox" id="tamper"> Attacker flips bits in the ciphertext (active)</label>
     </div>
     <div data-for="cert_spoof">
       <label class="field" for="cert-problem">Attacker's certificate</label>
@@ -60,86 +73,100 @@
 </div>
 
 <section class="section card sim-card">
+  <p class="scenario-goal" id="scenario-goal"></p>
   <div class="net-diagram" id="diagram"></div>
   <div class="diagram-legend">
-    <span><i style="background:var(--blue)"></i>Normal / readable</span>
-    <span><i style="background:var(--green)"></i>Encrypted</span>
-    <span><i style="background:var(--red)"></i>Intercepted / malicious</span>
-    <span><i style="background:var(--yellow)"></i>Warning</span>
-    <span><i style="background:var(--grey)"></i>Inactive</span>
+    <span><i style="color:var(--blue)"></i>Normal / readable</span>
+    <span><i style="color:var(--green)"></i>Encrypted</span>
+    <span><i style="color:var(--red);border-top-style:dashed"></i>Intercepted / malicious</span>
+    <span><i style="color:var(--yellow);border-top-style:dotted"></i>Warning</span>
+    <span><i style="color:var(--grey)"></i>Inactive</span>
   </div>
   <div id="player"></div>
+
+  <div class="sim-panels">
+    <div id="outcome"></div>
+
+    <!-- HTTP/HTTPS scenario panels: left / middle / right, like the diagram -->
+    <div id="flow-panels">
+      <div class="view-grid">
+        <div class="view-box client">
+          <h4><svg class="icon"><use href="#i-laptop"/></svg> Victim sent</h4>
+          <div class="address" id="victim-address" style="margin-bottom:8px"><svg><use href="#i-unlock"/></svg><span class="addr-text">-</span></div>
+          <pre class="output empty" id="victim-view">-</pre>
+        </div>
+        <div class="view-box attacker">
+          <h4><svg class="icon"><use href="#i-attacker"/></svg> Attacker sees</h4>
+          <div id="attacker-status"></div>
+          <pre class="output empty" id="attacker-view">Nothing intercepted yet.</pre>
+        </div>
+        <div class="view-box server">
+          <h4><svg class="icon"><use href="#i-server"/></svg> Server received</h4>
+          <pre class="output empty" id="server-view">Nothing received yet.</pre>
+        </div>
+      </div>
+
+      <div class="section hidden" id="diff-card">
+        <div class="output-label">Message modification (active attack)</div>
+        <div class="diff">
+          <div><div class="output-label">Original</div><pre class="output plain" id="diff-original"></pre></div>
+          <div><div class="output-label">After the attacker</div><pre class="output danger" id="diff-modified"></pre></div>
+        </div>
+      </div>
+
+      <div class="grid grid-2 section hidden" id="cert-card">
+        <div>
+          <div class="output-label">Browser certificate checks</div>
+          <ul class="check-list" id="cert-checks"></ul>
+        </div>
+        <div>
+          <div class="output-label">What the victim sees</div>
+          <div id="cert-browser"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ARP panels -->
+    <div class="hidden" id="arp-panels">
+      <div class="arp-tables">
+        <div class="view-box client"><h4><svg class="icon"><use href="#i-laptop"/></svg> Victim ARP table</h4><div id="arp-victim"></div></div>
+        <div class="view-box attacker"><h4><svg class="icon"><use href="#i-attacker"/></svg> Attacker ARP table</h4><div id="arp-attacker"></div></div>
+        <div class="view-box"><h4><svg class="icon"><use href="#i-router"/></svg> Gateway ARP table</h4><div id="arp-gateway"></div></div>
+      </div>
+      <div id="arp-detection"></div>
+      <details class="more">
+        <summary>Technical details: IP vs MAC addresses, ARP requests, replies and tables</summary>
+        <div class="more-body">
+          <p><strong>IP address</strong> (<code>192.168.1.1</code>): a logical address used to route across networks. <strong>MAC address</strong> (<code>00:11:22:33:44:01</code>): the hardware address that actually delivers frames on the local network.</p>
+          <p><strong>ARP request:</strong> a broadcast asking "Who has 192.168.1.1?". <strong>ARP reply:</strong> "192.168.1.1 is at 00:11:…". Devices cache answers in their <strong>ARP table</strong>.</p>
+          <p>ARP has no authentication, so a forged reply simply overwrites the table. ARP spoofing only works on the <strong>local network</strong> - and even then, HTTPS content stays encrypted.</p>
+        </div>
+      </details>
+    </div>
+  </div>
 </section>
 
-<div id="outcome" class="section"></div>
-
-<!-- HTTP/HTTPS scenario panels -->
-<section class="section" id="flow-panels">
-  <div class="view-grid">
-    <div class="view-box client">
-      <h4><svg class="icon"><use href="#i-laptop"/></svg> Victim sent</h4>
-      <div class="address" id="victim-address" style="margin-bottom:8px"><svg><use href="#i-unlock"/></svg><span class="addr-text">-</span></div>
-      <pre class="output empty" id="victim-view">-</pre>
-    </div>
-    <div class="view-box attacker">
-      <h4><svg class="icon"><use href="#i-attacker"/></svg> Attacker sees</h4>
-      <div id="attacker-status"></div>
-      <pre class="output empty" id="attacker-view">Nothing intercepted yet.</pre>
-    </div>
-    <div class="view-box server">
-      <h4><svg class="icon"><use href="#i-server"/></svg> Server received</h4>
-      <pre class="output empty" id="server-view">Nothing received yet.</pre>
-    </div>
-  </div>
-
-  <div class="card section hidden" id="diff-card">
-    <h3>Message modification</h3>
-    <div class="diff">
-      <div><div class="output-label">Original</div><pre class="output plain" id="diff-original"></pre></div>
-      <div><div class="output-label">After the attacker</div><pre class="output danger" id="diff-modified"></pre></div>
-    </div>
-  </div>
-
-  <div class="grid grid-2 section hidden" id="cert-card">
-    <div class="card">
-      <h3>Browser certificate checks</h3>
-      <ul class="check-list" id="cert-checks"></ul>
-    </div>
-    <div class="card">
-      <h3>What the victim sees</h3>
-      <div id="cert-browser"></div>
-    </div>
-  </div>
-</section>
-
-<!-- ARP panels -->
-<section class="section hidden" id="arp-panels">
-  <div class="arp-tables">
-    <div class="view-box client"><h4><svg class="icon"><use href="#i-laptop"/></svg> Victim ARP table</h4><div id="arp-victim"></div></div>
-    <div class="view-box attacker"><h4><svg class="icon"><use href="#i-attacker"/></svg> Attacker ARP table</h4><div id="arp-attacker"></div></div>
-    <div class="view-box"><h4><svg class="icon"><use href="#i-router"/></svg> Gateway ARP table</h4><div id="arp-gateway"></div></div>
-  </div>
-  <div id="arp-detection" class="section"></div>
+<section class="section">
   <details class="more">
-    <summary>IP vs MAC addresses, ARP requests, replies and tables</summary>
-    <div class="more-body">
-      <p><strong>IP address</strong> (192.168.1.1): a logical address used to route across networks. <strong>MAC address</strong> (00:11:22:33:44:01): the hardware address that actually delivers frames on the local network.</p>
-      <p><strong>ARP request:</strong> a broadcast asking "Who has 192.168.1.1?". <strong>ARP reply:</strong> "192.168.1.1 is at 00:11:…". Devices cache answers in their <strong>ARP table</strong>.</p>
-      <p>ARP has no authentication, so a forged reply simply overwrites the table. ARP spoofing only works on the <strong>local network</strong> - and even then, HTTPS content stays encrypted.</p>
-    </div>
-  </details>
-</section>
-
-<section class="section card">
-  <div class="grid grid-2">
-    <div><div class="output-label">Attack goal</div><p id="note-goal" class="small"></p></div>
-    <div><div class="output-label">Defence</div><p id="note-defence" class="small"></p></div>
-  </div>
-  <details class="more">
-    <summary>Packet log for this run (click to inspect)</summary>
+    <summary>Packet log for this run - select a packet to inspect it</summary>
     <div class="more-body"><ul class="packet-log" id="packet-log"></ul></div>
   </details>
-  <div class="callout small">All attacks here are simulated inside this application. Nothing is sent on a real network.</div>
+  <details class="more">
+    <summary>Technical details: attack goal and defence</summary>
+    <div class="more-body">
+      <div class="output-label">Attack goal</div><p id="note-goal"></p>
+      <div class="output-label">Defence</div><p id="note-defence"></p>
+    </div>
+  </details>
+  <details class="more">
+    <summary>Learn more: when HTTPS can still be intercepted</summary>
+    <div class="more-body">
+      <p>HTTPS stops <strong>passive</strong> reading and silent modification. It does not make interception impossible:</p>
+      <p><strong>Certificate warnings ignored</strong> - if the user clicks through, the attacker's certificate is used and the attacker can decrypt (scenario C).</p>
+      <p><strong>Malicious root CA installed</strong> - a fake certificate then passes every check, with no warning (scenario C, "trusted rogue CA").</p>
+      <p><strong>First visit over HTTP</strong> - without HSTS, an attacker can keep the victim on HTTP (TLS stripping, scenario D). HSTS and HTTPS-Only Mode prevent this.</p>
+    </div>
+  </details>
 </section>
 {% endblock %}
 

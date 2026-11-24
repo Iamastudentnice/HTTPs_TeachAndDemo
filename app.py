@@ -2,11 +2,11 @@
 
 import os
 
-from flask import Flask, jsonify, render_template, request, session
+from flask import Flask, jsonify, redirect, render_template, request, session, url_for
 
 import progress
 from simulations import (arp_spoofing, certificates, encryption, http_https, mitm,
-                         packet_inspection, presentation, tls_handshake)
+                         packet_inspection, tls_handshake, website_journey)
 
 app = Flask(__name__)
 # The secret key signs the session cookie that stores exploration progress.
@@ -14,7 +14,7 @@ app = Flask(__name__)
 app.secret_key = os.environ.get("LAB_SECRET_KEY", os.urandom(32))
 
 MAX_MESSAGE_LENGTH = 300
-DEFAULT_MESSAGE = "Username: Brian\nPassword: example123"
+DEFAULT_MESSAGE = "Username: John Doe\nPassword: example123"
 
 
 # --- Helpers ---
@@ -36,54 +36,57 @@ def clean_text(value, default=""):
 
 @app.context_processor
 def add_progress_to_templates():
-    """Make progress information available in every template (for the sidebar)."""
-    return {"progress": progress.summarise_progress(session)}
+    """Make progress information available in every template (for the sidebar and the
+    "lab completed" box)."""
+    return {"progress": progress.summarise_progress(session),
+            "lab_info": progress.completion_info(url_for)}
 
 
 # --- Page routes ---
 
-@app.route("/")
+@app.route("/labs")
 def index():
-    """Home page: choose Presentation or Exploration mode."""
-    return render_template("index.html", active="home")
+    """Overview of every lab, with a short MITM preview."""
+    return render_template("index.html", active="home", default_message=DEFAULT_MESSAGE)
 
 
 @app.route("/present")
 def presentation_page():
-    """Presentation Mode: the guided two-minute demonstration."""
-    return render_template("presentation.html", active="present",
-                           total_seconds=presentation.TOTAL_SECONDS)
+    """The old timed presentation was removed. Old links go to the start page instead."""
+    return redirect(url_for("http_https_page"))
 
 
-@app.route("/api/presentation", methods=["GET"])
-def api_presentation():
-    """Return the whole timed script (scenes + steps) built by Python."""
-    return jsonify(presentation.build_presentation())
-
-
+@app.route("/")
 @app.route("/http-https")
 def http_https_page():
-    """Lab 1 page: HTTP vs HTTPS."""
+    """Lab 1, HTTP vs HTTPS. This is also the start page for new visitors."""
     return render_template("http_https.html", active="http_https",
                            comparison=http_https.COMPARISON_TABLE, default_message=DEFAULT_MESSAGE)
 
 
+@app.route("/journey")
+def journey_page():
+    """Lab 2 page: the journey of a website."""
+    return render_template("journey.html", active="journey", this_lab=progress.find_module("journey"),
+                           next_lab=progress.next_module("journey"))
+
+
 @app.route("/tls-handshake")
 def tls_handshake_page():
-    """Lab 2 page: TLS handshake."""
+    """Lab 3 page: TLS handshake."""
     return render_template("tls_handshake.html", active="tls_handshake")
 
 
 @app.route("/encryption")
 def encryption_page():
-    """Lab 3 page: encryption laboratory."""
+    """Lab 4 page: encryption laboratory."""
     return render_template("encryption.html", active="encryption",
                            hash_algorithms=list(encryption.HASH_ALGORITHMS.keys()) + ["MD5 (broken)"])
 
 
 @app.route("/certificates")
 def certificates_page():
-    """Lab 4 page: certificate explorer."""
+    """Lab 5 page: certificate explorer."""
     return render_template("certificates.html", active="certificates",
                            scenarios=certificates.SCENARIOS,
                            field_explanations=certificates.FIELD_EXPLANATIONS)
@@ -91,8 +94,12 @@ def certificates_page():
 
 @app.route("/mitm")
 def mitm_page():
-    """Lab 5 page: MITM attack lab."""
+    """Lab 6 page: MITM attack lab. ?scenario=arp (etc.) opens a scenario directly."""
+    start_scenario = request.args.get("scenario", "http_mitm")
+    if start_scenario not in mitm.SCENARIOS:
+        start_scenario = "http_mitm"
     return render_template("mitm.html", active="mitm", scenarios=mitm.SCENARIOS,
+                           start_scenario=start_scenario,
                            scenario_notes=mitm.SCENARIO_NOTES,
                            cert_problems=mitm.CERT_PROBLEMS, arp_defences=arp_spoofing.DEFENCES,
                            default_message=DEFAULT_MESSAGE)
@@ -100,7 +107,7 @@ def mitm_page():
 
 @app.route("/packet-inspection")
 def packet_inspection_page():
-    """Lab 6 page: packet inspector."""
+    """Lab 7 page: packet inspector."""
     return render_template("packet_inspection.html", active="packet_inspection",
                            example_filters=packet_inspection.SUPPORTED_FILTERS)
 
@@ -120,7 +127,18 @@ def api_http_https():
     })
 
 
-# --- Module 2 - TLS handshake ---
+# --- Module 2 - The journey of a website ---
+
+@app.route("/api/journey", methods=["POST"])
+def api_journey():
+    """Build the eight stages for the typed address. Nothing is looked up or contacted."""
+    data = get_json_data()
+    address = clean_text(data.get("address"), "")
+    protocol = "HTTP" if data.get("protocol") == "HTTP" else "HTTPS"
+    return jsonify(website_journey.build_journey(address, protocol))
+
+
+# --- Module 3 - TLS handshake ---
 
 @app.route("/api/tls/handshake", methods=["POST"])
 def api_tls_handshake():
@@ -131,7 +149,7 @@ def api_tls_handshake():
                     "steps": tls_handshake.build_handshake_steps(message)})
 
 
-# --- Module 3 - Encryption laboratory ---
+# --- Module 4 - Encryption laboratory ---
 
 @app.route("/api/encryption/symmetric/encrypt", methods=["POST"])
 def api_symmetric_encrypt():
@@ -225,7 +243,7 @@ def api_verify():
                                                str(data.get("signature_hex", ""))))
 
 
-# --- Module 4 - Certificates ---
+# --- Module 5 - Certificates ---
 
 @app.route("/api/certificates/scenario", methods=["POST"])
 def api_certificate_scenario():
@@ -242,7 +260,7 @@ def api_certificate_scenario():
     return jsonify(certificates.explore_scenario(scenario, hostname, trusted))
 
 
-# --- Module 5 - MITM lab (including ARP spoofing) ---
+# --- Module 6 - MITM lab (including ARP spoofing) ---
 
 @app.route("/api/mitm/simulate", methods=["POST"])
 def api_mitm():
@@ -262,7 +280,7 @@ def api_arp():
     return jsonify(arp_spoofing.build_arp_steps(str(data.get("defence", "none"))))
 
 
-# --- Module 6 - Packet inspection ---
+# --- Module 7 - Packet inspection ---
 
 @app.route("/api/packets", methods=["POST"])
 def api_packets():

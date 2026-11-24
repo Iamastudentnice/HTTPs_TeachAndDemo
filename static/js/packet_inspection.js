@@ -1,4 +1,4 @@
-/* packet_inspection.js - Lab 6. */
+/* packet_inspection.js - Lab 7. */
 
 document.addEventListener("DOMContentLoaded", function () {
   const diagram = new NetworkDiagram($("#diagram"));

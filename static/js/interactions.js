@@ -87,6 +87,18 @@ function setupSidebar() {
 /* Progress tracking (stored by Python in the Flask session) */
 
 // Update the progress bar and tick marks in the sidebar.
+// Labs that show their own "completed" message: the tutorial (Lab 01) and the journey's
+// conclusion (Lab 02). Every other lab uses the shared box from tutorial.js.
+const LABS_WITH_OWN_COMPLETION = ["http_https", "journey"];
+
+// Which labs were already complete when the page loaded (from progress.py).
+const labWasComplete = {};
+document.addEventListener("DOMContentLoaded", function () {
+  $all(".nav a[data-module]").forEach(function (link) {
+    labWasComplete[link.dataset.module] = $(".status", link).textContent.trim() !== "";
+  });
+});
+
 function updateSidebarProgress(progress) {
   const percent = $("#sidebar-percent");
   const bar = $("#sidebar-bar");
@@ -98,7 +110,15 @@ function updateSidebarProgress(progress) {
     if (!status) return;
     status.className = "status" + (module.complete ? " done" : module.done > 0 ? " partial" : "");
     status.title = module.done + " of " + module.total + " activities";
-    status.innerHTML = module.complete ? '<svg><use href="#i-check"/></svg>' : "";
+    status.textContent = module.complete ? "✓" : "";
+
+    // This page's lab has just been completed for the first time: offer the next lab.
+    const thisPage = module.slug === document.body.dataset.lab;
+    if (thisPage && module.complete && !labWasComplete[module.slug] &&
+        LABS_WITH_OWN_COMPLETION.indexOf(module.slug) < 0) {
+      showLabComplete(module.slug);
+    }
+    labWasComplete[module.slug] = module.complete;
   });
 }
 
@@ -172,6 +192,8 @@ function showPacketDetails(packet, nodeNames) {
       escapeHtml(packet.payload) + "</pre>";
   }
   openModal(packet.label, STYLE_TAGS[packet.style] || "", body);
+  // Tell the tutorial a packet was really inspected (e.g. "inspected-plain" for HTTP).
+  markTutorialEvent("inspected-" + packet.style);
 }
 
 /* Tabs */
@@ -207,6 +229,10 @@ function setupSegmented(group, onChange) {
 
 /* NetworkDiagram - draws devices left-to-right and animates packets. */
 
+const STATE_LABELS = {
+  active: "Active", secure: "Secure", danger: "Alert", warning: "Warning", inactive: "Inactive",
+};
+
 class NetworkDiagram {
   constructor(container) {
     this.container = container;
@@ -216,6 +242,7 @@ class NetworkDiagram {
     this.parked = null;       // the packet currently resting at its destination
     this.animation = null;
     this.onPacketClick = null;
+    this.caption = null;      // short text shown right under the current packet's path
 
     const diagram = this;
     window.addEventListener("resize", function () { diagram.layout(); });
@@ -230,7 +257,8 @@ class NetworkDiagram {
     this.container.classList.toggle("has-top-lane", Boolean(extraLinks && extraLinks.length));
 
     const row = document.createElement("div");
-    row.className = "net-row";
+    // The device count lets the CSS give 2- and 3-device diagrams sensible widths.
+    row.className = "net-row nodes-" + nodes.length;
     const diagram = this;
 
     nodes.forEach(function (node) {
@@ -241,7 +269,8 @@ class NetworkDiagram {
         '<div class="net-icon"><svg><use href="#i-' + node.icon + '"/></svg>' +
         '<span class="net-badge"></span></div>' +
         '<div class="net-label">' + escapeHtml(node.label) + "</div>" +
-        '<div class="net-sublabel">' + escapeHtml(node.sublabel) + "</div>";
+        '<div class="net-sublabel">' + escapeHtml(node.sublabel) + "</div>" +
+        '<div class="net-state"></div>';
       row.appendChild(element);
       node.element = element;
     });
@@ -255,10 +284,16 @@ class NetworkDiagram {
       diagram.addLink(link.from, link.to, "top", link.label || "");
     });
 
+    // Visible instruction (not a hover tooltip) so people know packets are clickable.
     const hint = document.createElement("div");
     hint.className = "diagram-hint";
-    hint.textContent = "Tip: click a packet to inspect it";
+    hint.textContent = "Select a packet to inspect it.";
     this.container.appendChild(hint);
+
+    this.captionElement = document.createElement("div");
+    this.captionElement.className = "diagram-caption hidden";
+    this.captionElement.setAttribute("aria-hidden", "true");
+    this.container.appendChild(this.captionElement);
 
     // Wait one frame so the browser has measured the nodes before drawing lines.
     requestAnimationFrame(function () { diagram.layout(); });
@@ -290,6 +325,8 @@ class NetworkDiagram {
   layout() {
     if (!this.nodes.length) return;
     const box = this.container.getBoundingClientRect();
+    // On narrow screens the diagram can scroll sideways, so add how far it is scrolled.
+    const scrollX = this.container.scrollLeft;
     const diagram = this;
 
     this.links.forEach(function (link) {
@@ -298,8 +335,8 @@ class NetworkDiagram {
       const style = link.element.style;
 
       if (link.lane === "top") {
-        const fromCentre = fromIcon.left + fromIcon.width / 2 - box.left;
-        const toCentre = toIcon.left + toIcon.width / 2 - box.left;
+        const fromCentre = fromIcon.left + fromIcon.width / 2 - box.left + scrollX;
+        const toCentre = toIcon.left + toIcon.width / 2 - box.left + scrollX;
         link.x1 = fromCentre;
         link.x2 = toCentre;
         link.y = fromIcon.top - box.top - 34;
@@ -308,8 +345,8 @@ class NetworkDiagram {
         style.top = link.y + "px";
         style.height = "30px";
       } else {
-        link.x1 = fromIcon.right - box.left + 8;
-        link.x2 = toIcon.left - box.left - 8;
+        link.x1 = fromIcon.right - box.left + scrollX + 8;
+        link.x2 = toIcon.left - box.left + scrollX - 8;
         link.y = fromIcon.top + fromIcon.height / 2 - box.top - 2;
         style.left = link.x1 + "px";
         style.width = Math.max(0, link.x2 - link.x1) + "px";
@@ -317,11 +354,55 @@ class NetworkDiagram {
       }
     });
 
+    this.placeCaption();
+
     // Keep a resting packet in the right place after the window is resized.
     if (this.parked && this.packetElement && !this.isAnimating()) {
+      this.packetElement.style.maxWidth = this.routeLength(this.parked.path) + "px";
       const geometry = this.packetGeometry(this.parked.path, this.parked.direction);
       this.packetElement.style.top = geometry.y + "px";
       this.packetElement.style.transform = "translateX(" + geometry.endX + "px)";
+    }
+  }
+
+  /* Show a short caption beside the step's packet, under the line it travels on. */
+  showCaption(text, packet) {
+    this.caption = text ? { text: text, packet: packet || null } : null;
+    this.placeCaption();
+  }
+
+  // Work out where the caption goes (called again after every layout).
+  placeCaption() {
+    const element = this.captionElement;
+    if (!element) return;
+    if (!this.caption) {
+      element.classList.add("hidden");
+      return;
+    }
+    element.textContent = this.caption.text;
+    element.className = "diagram-caption" + (this.caption.packet ? " style-" + this.caption.packet.style : "");
+
+    const width = this.container.scrollWidth;
+    const path = this.caption.packet ? this.findPath(this.caption.packet.from, this.caption.packet.to, this.caption.packet.route) : [];
+    // Only sit under the line when it is long enough; otherwise the caption would cover device labels.
+    const longEnough = path.length && path[0].lane === "main" && this.routeLength(path) >= 240;
+    if (longEnough) {
+      // Under the line, kept clear of the device labels at each end.
+      const left = Math.min.apply(null, path.map(function (link) { return link.x1; })) + 40;
+      const right = Math.max.apply(null, path.map(function (link) { return link.x2; })) - 40;
+      const span = Math.max(140, right - left);
+      element.style.maxWidth = span + "px";
+      element.style.top = (path[0].y + 18) + "px";
+      element.style.bottom = "";
+      const centre = (left + right) / 2;
+      const own = Math.min(element.offsetWidth, span);
+      element.style.left = Math.max(4, Math.min(centre - own / 2, width - own - 4)) + "px";
+    } else {
+      // No packet (or the top lane): show it along the bottom of the diagram.
+      element.style.maxWidth = Math.max(200, this.container.clientWidth - 32) + "px";
+      element.style.top = "";
+      element.style.bottom = "14px";
+      element.style.left = (this.container.scrollLeft + 16) + "px";
     }
   }
 
@@ -344,6 +425,13 @@ class NetworkDiagram {
     }, this);
   }
 
+  // Length of the line(s) a packet travels along, used as its maximum width.
+  routeLength(path) {
+    const left = Math.min.apply(null, path.map(function (link) { return link.x1; }));
+    const right = Math.max.apply(null, path.map(function (link) { return link.x2; }));
+    return Math.max(90, right - left);
+  }
+
   /* Start/end x positions and the y position for a packet on a path. */
   packetGeometry(path, direction) {
     const width = this.packetElement ? this.packetElement.offsetWidth : 120;
@@ -353,7 +441,7 @@ class NetworkDiagram {
     const y = path[0].y - height / 2 + (path[0].lane === "top" ? 0 : 2);
 
     // Keep the packet inside the diagram even on narrow screens.
-    const maxX = this.container.clientWidth - width - 4;
+    const maxX = this.container.scrollWidth - width - 4;
     let startX = direction === "right" ? left : right - width;
     let endX = direction === "right" ? right - width : left;
     startX = Math.max(4, Math.min(startX, maxX));
@@ -387,8 +475,8 @@ class NetworkDiagram {
     const arrow = route.direction === "right" ? " →" : "← ";
     element.innerHTML = (route.direction === "left" ? arrow : "") +
       '<svg><use href="#i-' + lockIcon + '"/></svg><span class="label">' + escapeHtml(packet.label) +
-      "</span>" + (route.direction === "right" ? arrow : "");
-    element.title = "Click to inspect this packet";
+      "</span>" + (route.direction === "right" ? arrow : "") + '<span class="inspect">Inspect</span>';
+    element.setAttribute("aria-label", "Inspect packet: " + packet.label);
     const diagram = this;
     element.addEventListener("click", function () {
       showPacketDetails(packet, diagram.nodeNames());
@@ -397,6 +485,12 @@ class NetworkDiagram {
     this.container.appendChild(element);
     this.packetElement = element;
     this.parked = { packet: packet, path: route.path, direction: route.direction };
+
+    // Never let the packet be wider than the line it travels along, or it would cover
+    // a device on smaller screens. Long labels end in "..." (the full text is in the inspector).
+    element.style.maxWidth = this.routeLength(route.path) + "px";
+    // On short lines, drop the "Inspect" tag so the packet's own label stays readable.
+    element.classList.toggle("compact", this.routeLength(route.path) < 220);
 
     const geometry = this.packetGeometry(route.path, route.direction);
     element.style.top = geometry.y + "px";
@@ -459,6 +553,8 @@ class NetworkDiagram {
       node.element.classList.remove("state-active", "state-secure", "state-danger", "state-warning", "state-inactive");
       const state = highlights ? highlights[node.id] : null;
       if (state) node.element.classList.add("state-" + state);
+      // A text label as well as a colour, so the state never relies on colour alone.
+      $(".net-state", node.element).textContent = state ? STATE_LABELS[state] || state : "";
       const badge = $(".net-badge", node.element);
       if (state === "secure") badge.innerHTML = '<svg><use href="#i-lock"/></svg>';
       else if (state === "danger") badge.innerHTML = "!";
@@ -470,6 +566,7 @@ class NetworkDiagram {
   /* Back to grey lines, no highlights, no packet. */
   resetVisuals() {
     this.removePacket();
+    this.showCaption(null);
     this.setHighlights({});
     this.links.forEach(function (link) {
       link.element.classList.remove("link-plain", "link-encrypted", "link-malicious", "link-warning", "dir-left", "dir-right");
@@ -477,12 +574,15 @@ class NetworkDiagram {
   }
 }
 
-/* StepPlayer - plays a list of steps with full user control. */
+/* StepPlayer - shows a list of steps, one at a time, under full user control.
+   Nothing advances by itself: every step change needs a click
+   (Start / Send message shows step 1, then Next Step moves on one step). */
 
+// How long a packet takes to cross the diagram (milliseconds).
 const SPEEDS = {
-  slow: { move: 2800, dwell: 3600 },
-  normal: { move: 1900, dwell: 2600 },
-  fast: { move: 1100, dwell: 1500 },
+  slow: { move: 2800 },
+  normal: { move: 1900 },
+  fast: { move: 1100 },
 };
 
 class StepPlayer {
@@ -502,12 +602,12 @@ class StepPlayer {
     this.steps = [];
     this.originalSteps = [];
     this.index = -1;
-    this.playing = false;
-    this.stepDone = false;
+    this.paused = false;   // true while the current packet is paused mid-flight
+    this.stepDone = false; // true once the current step's packet has arrived
     this.finished = false;
     this.loading = false;
-    this.timer = null;
-    this.token = 0;     // increases every time we jump, so old timers are ignored
+    this.token = 0;        // increases every time we jump, so a late "arrived" is ignored
+    this.visited = [];     // visited[i] is true once stage i has been shown
 
     this.buildControls();
     this.showIntro();
@@ -518,16 +618,16 @@ class StepPlayer {
   buildControls() {
     this.mount.innerHTML =
       '<div class="step-progress"><span class="step-counter">Not started</span><div class="step-dots"></div></div>' +
-      '<div class="step-panel intro" aria-live="polite"><div class="step-title"></div><p class="step-text"></p><div class="choice-row"></div></div>' +
+      '<div class="step-panel intro" aria-live="polite"><div class="step-title"></div><p class="step-text"></p><div class="choice-row"></div><p class="step-wait" aria-live="polite"></p></div>' +
       '<div class="player">' +
       '  <div class="btn-group">' +
-      '    <button class="btn btn-primary" data-action="start">' + iconSvg("play") + " " + escapeHtml(this.startLabel) + "</button>" +
-      '    <button class="btn" data-action="pause">' + iconSvg("pause") + " Pause</button>" +
-      '    <button class="btn" data-action="resume">' + iconSvg("play") + " Resume</button>" +
-      '    <button class="btn" data-action="prev">' + iconSvg("prev") + " Previous</button>" +
-      '    <button class="btn" data-action="next">Next ' + iconSvg("next") + "</button>" +
-      '    <button class="btn" data-action="replay">' + iconSvg("replay") + " Replay</button>" +
-      '    <button class="btn" data-action="reset">' + iconSvg("stop") + " Reset</button>" +
+      '    <button class="btn btn-primary" data-action="start">' + escapeHtml(this.startLabel) + "</button>" +
+      '    <button class="btn" data-action="pause">Pause</button>' +
+      '    <button class="btn" data-action="resume">Resume</button>' +
+      '    <button class="btn" data-action="prev">Previous Step</button>' +
+      '    <button class="btn" data-action="next">Next Step</button>' +
+      '    <button class="btn" data-action="replay">Replay</button>' +
+      '    <button class="btn" data-action="reset">Reset</button>' +
       "  </div>" +
       '  <label class="speed">Speed <select data-action="speed">' +
       '    <option value="slow">Slow</option><option value="normal" selected>Normal</option><option value="fast">Fast</option>' +
@@ -540,6 +640,7 @@ class StepPlayer {
     this.titleElement = $(".step-title", this.mount);
     this.textElement = $(".step-text", this.mount);
     this.choiceRow = $(".choice-row", this.mount);
+    this.waitElement = $(".step-wait", this.mount);
     this.speedSelect = $('select[data-action="speed"]', this.mount);
     this.buttons = {};
 
@@ -568,7 +669,7 @@ class StepPlayer {
 
   /* ---------------- Control actions ---------------- */
 
-  // Fetch the steps from Python and start playing.
+  // Fetch the steps from Python and show the first step only.
   async start() {
     if (this.loading) return;
     this.loading = true;
@@ -578,8 +679,8 @@ class StepPlayer {
       this.diagram.setNodes(data.nodes, data.extra_links);
       this.steps = data.steps;
       this.originalSteps = data.steps.slice();
+      this.visited = [];
       this.finished = false;
-      this.playing = true;
       this.loading = false;
       // Give the diagram one frame to lay out before the first packet moves.
       const player = this;
@@ -592,30 +693,23 @@ class StepPlayer {
     }
   }
 
-  // Pause the animation.
+  // Freeze the packet that is currently moving (it stays on this step).
   pause() {
-    this.playing = false;
-    clearTimeout(this.timer);
+    this.paused = true;
     this.diagram.pause();
     this.updateButtons();
   }
 
-  // Continue after a pause.
+  // Let the paused packet finish its journey. This never moves to another step.
   resume() {
-    if (!this.steps.length || this.finished) return;
-    this.playing = true;
-    if (this.stepDone) {
-      this.afterStep();
-    } else {
-      this.diagram.resume();
-    }
+    this.paused = false;
+    this.diagram.resume();
     this.updateButtons();
   }
 
-  // Go to the next step.
+  // Go to the next step (one step per click).
   next() {
     if (this.index < this.steps.length - 1 && !this.waitingForChoice()) {
-      this.playing = false;
       this.goTo(this.index + 1, true);
     }
   }
@@ -623,30 +717,27 @@ class StepPlayer {
   // Go to the previous step.
   prev() {
     if (this.index > 0) {
-      this.playing = false;
       this.finished = false;
       this.goTo(this.index - 1, true);
     }
   }
 
-  // Play the simulation again from the first step.
+  // Go back to the first step and wait there.
   replay() {
     if (!this.originalSteps.length) return;
     this.steps = this.originalSteps.slice();
     this.finished = false;
-    this.playing = true;
     this.goTo(0, true);
   }
 
   // Stop and clear the simulation.
   reset() {
     this.token += 1;
-    clearTimeout(this.timer);
     this.diagram.resetVisuals();
     this.steps = [];
     this.originalSteps = [];
     this.index = -1;
-    this.playing = false;
+    this.paused = false;
     this.finished = false;
     this.stepDone = false;
     this.showIntro();
@@ -662,7 +753,7 @@ class StepPlayer {
     if (!step || !step.branches || !step.branches[choiceId]) return;
     step.chosen = choiceId;
     this.steps = this.steps.slice(0, this.index + 1).concat(step.branches[choiceId]);
-    this.playing = true;
+    // Show the consequence of the choice (one step), then wait again.
     this.goTo(this.index + 1, true);
   }
 
@@ -679,9 +770,10 @@ class StepPlayer {
     if (index < 0 || index >= this.steps.length) return;
     this.token += 1;
     const myToken = this.token;
-    clearTimeout(this.timer);
     this.index = index;
+    this.visited[index] = true;
     this.stepDone = false;
+    this.paused = false;
     const step = this.steps[index];
 
     // Rebuild the state of earlier steps instantly (line colours), so that
@@ -694,6 +786,7 @@ class StepPlayer {
       Object.assign(panels, earlierStep.panels || {});
     }
     this.diagram.setHighlights(step.highlight);
+    this.diagram.showCaption(step.title, step.packet);
 
     this.renderStep(step, index);
     this.onStep(step, index, panels);
@@ -709,36 +802,30 @@ class StepPlayer {
     this.updateButtons();
   }
 
-  /* Decide what to do once a step's animation has finished. */
+  /* The step's packet has arrived. Do NOT move on - wait for the user. */
   afterStep() {
-    const step = this.steps[this.index];
-    if (step.choices && !step.chosen) {
-      this.playing = false;
-      this.updateButtons();
-      return;
-    }
-    if (this.index >= this.steps.length - 1) {
+    if (this.index >= this.steps.length - 1 && !this.waitingForChoice()) {
       this.finish();
       return;
-    }
-    if (this.playing) {
-      const wait = this.speed().dwell + (step.packet ? 0 : 600);
-      const player = this;
-      const myToken = this.token;
-      this.timer = setTimeout(function () {
-        if (myToken === player.token && player.playing) player.goTo(player.index + 1, true);
-      }, wait);
     }
     this.updateButtons();
   }
 
-  // End of the simulation / presentation.
+  // The last step has been reached.
   finish() {
     const firstTime = !this.finished;
-    this.playing = false;
     this.finished = true;
     this.updateButtons();
-    if (firstTime) this.onFinish(this.steps);
+    // It only counts as finished if every stage was viewed, not just the last one
+    // (the progress dots allow jumping straight to the end).
+    if (firstTime && this.sawEveryStage()) this.onFinish(this.steps);
+  }
+
+  sawEveryStage() {
+    for (let i = 0; i < this.steps.length; i++) {
+      if (!this.visited[i]) return false;
+    }
+    return true;
   }
 
   /* ---------------- Rendering ---------------- */
@@ -772,7 +859,6 @@ class StepPlayer {
       dot.setAttribute("aria-label", "Go to " + this.steps[dotIndex].title);
       const player = this;
       dot.addEventListener("click", function () {
-        player.playing = false;
         player.finished = false;
         player.goTo(dotIndex, true);
       });
@@ -808,19 +894,43 @@ class StepPlayer {
     const loaded = this.steps.length > 0;
     const atEnd = this.index >= this.steps.length - 1;
     const choice = this.waitingForChoice();
-    this.buttons.start.disabled = this.loading || (loaded && !this.finished && this.index >= 0 && this.playing);
-    this.buttons.pause.disabled = !loaded || !this.playing;
-    this.buttons.resume.disabled = !loaded || this.playing || this.finished || choice || (atEnd && this.stepDone);
+    const moving = loaded && this.index >= 0 && !this.stepDone;   // a packet is in flight
+    this.buttons.start.disabled = this.loading || (loaded && !this.finished);
+    this.buttons.pause.disabled = !moving || this.paused;
+    this.buttons.resume.disabled = !moving || !this.paused;
     this.buttons.prev.disabled = !loaded || this.index <= 0;
     this.buttons.next.disabled = !loaded || atEnd || choice;
     this.buttons.replay.disabled = !loaded;
     this.buttons.reset.disabled = !loaded;
+
+    // Draw attention to Next Step only while the current step is finished and waiting for it.
+    const waitingForNext = loaded && this.stepDone && !atEnd && !choice;
+    this.buttons.next.classList.toggle("is-next", waitingForNext);
+    // Before anything has been sent, the start button is the next thing to press.
+    this.buttons.start.classList.toggle("is-next", !loaded && !this.loading);
+    if (!loaded) this.waitElement.textContent = "";
+    else if (waitingForNext) this.waitElement.textContent = "Press Next Step to continue.";
+    else if (choice && this.stepDone) this.waitElement.textContent = "Choose an option above to continue.";
+    else if (this.finished) this.waitElement.textContent = "End of the simulation. Use Previous Step, Replay or Reset.";
+    else this.waitElement.textContent = "";
   }
 }
 
 /* Page start-up */
 
+/* Reset exploration progress (small link at the bottom of the lab index) */
+function setupProgressReset() {
+  const button = $("#reset-progress");
+  if (!button) return;
+  button.addEventListener("click", async function () {
+    if (!confirm("Reset your exploration progress?")) return;
+    await apiPost("/api/progress/reset");
+    window.location.reload();
+  });
+}
+
 document.addEventListener("DOMContentLoaded", function () {
   setupSidebar();
   setupModal();
+  setupProgressReset();
 });

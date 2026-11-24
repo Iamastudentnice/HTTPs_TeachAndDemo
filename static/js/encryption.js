@@ -1,4 +1,4 @@
-/* encryption.js - Lab 3. */
+/* encryption.js - Lab 4. */
 
 document.addEventListener("DOMContentLoaded", function () {
   setupTabs(document);
@@ -30,6 +30,7 @@ document.addEventListener("DOMContentLoaded", function () {
     $("#sym-result").innerHTML = '<span class="small muted">' + result.plaintext_length + " bytes of plaintext became " +
       result.ciphertext_length + " bytes (ciphertext + 16-byte tag). Not readable without the key.</span>";
     ["#sym-decrypt", "#sym-tamper", "#sym-wrongkey"].forEach(function (id) { $(id).disabled = false; });
+    refreshProgress();   // Python recorded this activity; update the index (and the lab-complete check)
   });
 
   // Ask Python to decrypt and show the result.
@@ -88,6 +89,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const result = await apiPost("/api/encryption/rsa/decrypt", { private_pem: privatePem, ciphertext_hex: rsaKeys.cipher });
     if (result.success) badge($("#rsa-result"), true, 'Decrypted: "' + result.plaintext + '"');
     else badge($("#rsa-result"), false, result.error);
+    refreshProgress();
   }
 
   $("#rsa-decrypt").addEventListener("click", function () { rsaDecrypt(rsaKeys.privatePem); });
@@ -117,6 +119,7 @@ document.addEventListener("DOMContentLoaded", function () {
     html += '<p class="muted" style="margin-top:8px">Always ' + result.total_bits +
       " bits, whatever the input length. There is no decrypt button because a hash cannot be reversed.</p>";
     $("#hash-compare").innerHTML = html;
+    refreshProgress();
   });
 
   /* ---------------- Signatures ---------------- */
@@ -150,5 +153,6 @@ document.addEventListener("DOMContentLoaded", function () {
       public_key_hex: signing.publicKey, message: $("#sig-received").value, signature_hex: signing.signature,
     });
     badge($("#sig-result"), result.valid, result.reason);
+    refreshProgress();
   });
 });
