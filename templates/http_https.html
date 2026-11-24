@@ -19,6 +19,7 @@
   <div class="lesson-start">
     <p class="small muted">New to this? A short guided tour walks you through it.</p>
     <button class="btn btn-tutorial" type="button" data-start-guide>Start Here &mdash; Learn HTTPS</button>
+    <button class="btn btn-sm examiner-toggle" type="button" data-examiner-toggle><span class="examiner-line1">Examiner Button</span><span class="examiner-line2">Remove all restrictions</span></button>
   </div>
 </div>
 
@@ -99,7 +100,7 @@
         <h4><svg class="icon"><use href="#i-server"/></svg> What the website received</h4>
         <pre class="output empty" id="server-view">Nothing received yet.</pre>
       </div>
-      <div class="view-box">
+      <div class="view-box" id="packet-log-box">
         <h4><svg class="icon"><use href="#i-packets"/></svg> Packets sent - select one to inspect</h4>
         <ul class="packet-log" id="packet-log"></ul>
       </div>

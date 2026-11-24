@@ -134,6 +134,9 @@ document.addEventListener("DOMContentLoaded", function () {
     },
     onFinish: function () {
       tried[getProtocol()] = true;
+      // Report the finished run to the tutorial, e.g. "http-done".
+      markTutorialEvent(getProtocol().toLowerCase() + "-done");
+      if (eavesdropperBox.checked) markTutorialEvent("observer-done");
       recordProgress("http_https", getProtocol().toLowerCase());
       updateHint();
     },

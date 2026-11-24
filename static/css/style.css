@@ -306,8 +306,9 @@ table.compare td:first-child { color: var(--text-strong); font-weight: 500; }
   transition: border-color 0.25s, background 0.25s, opacity 0.25s;
 }
 .net-icon svg { width: 30px; height: 30px; }
-.net-label { font-weight: 600; color: var(--text-strong); font-size: 0.88rem; }
-.net-sublabel { font-family: var(--mono); font-size: 0.7rem; color: var(--muted); }
+/* Device name: the main label, so it carries more weight than the address under it */
+.net-label { font-weight: 700; color: var(--text-strong); font-size: 0.92rem; letter-spacing: 0.005em; }
+.net-sublabel { font-family: var(--mono); font-size: 0.7rem; font-weight: 400; color: var(--muted); margin-top: 1px; }
 .net-state {
   display: inline-block; margin-top: 6px; padding: 1px 6px; min-height: 18px;
   font-family: var(--mono); font-size: 0.64rem; letter-spacing: 0.06em; text-transform: uppercase;
@@ -830,3 +831,52 @@ details.more .more-body p:last-child { margin-bottom: 0; }
   .segmented button.is-next, .checkbox.is-next { animation: none; }
 }
 .lab-group { font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--faint); padding: 14px 4px 6px; border-bottom: 1px solid var(--line); }
+
+/* ---------- Tutorial: dragging, section locks, examiner mode ---------- */
+
+/* The header of the tutorial box is the drag handle. */
+.guide-head { cursor: grab; margin: -12px -14px 0; padding: 12px 14px 8px; touch-action: none; }
+body.guide-dragging, body.guide-dragging * { user-select: none; cursor: grabbing !important; }
+.guide.at-moved::before { display: none; }
+
+.guide-examiner { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 2px 0 8px; }
+.examiner-note { display: none; font-size: 0.76rem; color: var(--amber-text); }
+body.examiner-mode .examiner-note { display: inline; }
+
+/* Amber: easy to spot, and clearly different from the green tutorial button. */
+.examiner-toggle { background: var(--amber-bg); border-color: var(--amber); color: var(--amber-text); font-weight: 600; white-space: normal; text-align: left; }
+.examiner-toggle:hover:not(:disabled) { background: #EADFC8; border-color: var(--amber-text); }
+.examiner-toggle.is-on { background: var(--amber); border-color: var(--amber); color: var(--text-strong); }
+.lesson-start .examiner-toggle { margin-top: 8px; }
+/* Two lines inside one button */
+.examiner-toggle { flex-direction: column; align-items: flex-start; gap: 0; line-height: 1.25; padding-top: 5px; padding-bottom: 5px; }
+.examiner-line1 { display: block; font-weight: 700; }
+.examiner-line2 { display: block; font-weight: 500; font-size: 0.92em; }
+
+.guide-status { margin: 8px 0 0; font-size: 0.82rem; color: var(--muted); }
+.guide-status.is-complete { color: var(--green-text); font-weight: 500; }
+
+/* Next is never disabled (so a click can show the warning), it just looks locked. */
+.btn.is-locked, .btn-primary.is-locked:hover:not(:disabled) {
+  background: var(--surface-2); border-color: var(--line-strong); color: var(--muted); cursor: not-allowed;
+}
+
+.guide-warning {
+  display: none; margin: 8px 0 0; padding: 6px 10px; font-size: 0.82rem; font-weight: 500;
+  color: var(--red-text); background: var(--red-bg); border: 1px solid var(--red); border-left-width: 3px;
+}
+.guide-warning.show { display: block; animation: warning-in 0.2s ease-out; }
+@keyframes warning-in { from { opacity: 0; transform: translateY(-3px); } to { opacity: 1; transform: none; } }
+
+/* Bottom-left corner on desktop, clear of the tutorial box and the diagrams */
+.tutorial-toast {
+  position: fixed; bottom: 16px; left: 16px; transform: translateY(6px); z-index: 120; max-width: 320px;
+  padding: 8px 14px; font-size: 0.86rem; font-weight: 500;
+  color: var(--amber-text); background: var(--amber-bg); border: 1px solid var(--amber);
+  opacity: 0; pointer-events: none; transition: opacity 0.2s, transform 0.2s;
+}
+.tutorial-toast.show { opacity: 1; transform: none; }
+/* Phones dock the tutorial at the bottom, so the message goes to the top there */
+@media (max-width: 640px) {
+  .tutorial-toast { bottom: auto; top: calc(var(--header-height) + 8px); left: 12px; right: 12px; max-width: none; }
+}
