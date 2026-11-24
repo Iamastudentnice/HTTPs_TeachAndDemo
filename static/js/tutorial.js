@@ -95,9 +95,9 @@ const GUIDE_STEPS = [
 const LAB_COMPLETE = {
   title: "HTTP vs HTTPS Lab Completed",
   text: "You've seen how HTTP and HTTPS handle information differently.",
-  nextName: "TLS Handshake",
-  nextUrl: "/tls-handshake",
-  nextTeaches: "How your browser and a website agree on a secret key before any data is sent.",
+  nextName: "The Journey of a Website",
+  nextUrl: "/journey",
+  nextTeaches: "What happens between pressing Enter and seeing the page, one simple stage at a time.",
 };
 
 const WARNING_TEXT = "Please complete this section before moving onto the next!";

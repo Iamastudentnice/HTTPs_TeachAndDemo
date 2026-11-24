@@ -72,6 +72,10 @@ press `Ctrl + C` in the terminal to stop the app.
 - **Examiner Button – Remove all restrictions** (amber button on the start page and in the tutorial) –
   unlocks every tutorial step straight away for this browser tab. Press it again to restore the normal
   guided mode. It does not change or skip any simulation.
+- **The Journey of a Website** (`/journey`, Lab 02) – type an address (google.com is filled in) and
+  follow it through eight stages: reading the address, saved copies (caching), DNS, leaving the home
+  network, the TCP connection, TLS, the HTTP request and response, and the page appearing. Each stage
+  waits for Next Step. It is a simulation only: nothing is looked up and no website is contacted.
 - **Explore deeper** – the other labs in the left-hand index: TLS 1.3 handshake, Encryption,
   Certificates, MITM attacks (fake certificates, TLS stripping, ARP spoofing) and Packet inspection.
   `/labs` lists them all. MITM scenarios can be linked directly, e.g. `/mitm?scenario=arp`.

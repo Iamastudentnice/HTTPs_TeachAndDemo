@@ -63,9 +63,9 @@
   <aside class="sidebar" id="sidebar" aria-label="Laboratory index">
     <nav class="nav">
       {% for module in progress.modules %}
-        {# The first lab is the core lesson; everything after it goes deeper. #}
+        {# The first two labs are the core lesson; everything after them goes deeper. #}
         {% if loop.first %}<div class="nav-label">Core lesson</div>{% endif %}
-        {% if loop.index == 2 %}<div class="nav-label nav-label-gap">Explore deeper</div>{% endif %}
+        {% if loop.index == 3 %}<div class="nav-label nav-label-gap">Explore deeper</div>{% endif %}
         <a href="{{ url_for(module.endpoint) }}" data-module="{{ module.slug }}"
            class="{{ 'active' if active == module.slug }} {{ 'featured' if module.slug == 'mitm' }}">
           <span class="num">{{ '%02d' % module.number }}</span>

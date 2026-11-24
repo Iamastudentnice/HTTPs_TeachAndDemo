@@ -1,4 +1,4 @@
-/* encryption.js - Lab 3. */
+/* encryption.js - Lab 4. */
 
 document.addEventListener("DOMContentLoaded", function () {
   setupTabs(document);

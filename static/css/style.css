@@ -936,3 +936,89 @@ body.guide-visible .lesson-start { visibility: hidden; }
 /* When there is no free space for an arrow, its element gets this outline instead */
 .pointer-fallback { outline: 2px dashed var(--tutorial) !important; outline-offset: 3px; }
 .guide.at-corner::before { display: none; }
+
+/* ---------- Lab 02: The Journey of a Website ---------- */
+
+/* .btn sets display, which would otherwise override the hidden attribute */
+.btn[hidden] { display: none !important; }
+
+.journey-start .controls-row { align-items: flex-end; }
+.journey-error { margin: 10px 0 0; padding: 6px 10px; font-size: 0.86rem; color: var(--red-text); background: var(--red-bg); border-left: 3px solid var(--red); }
+.journey-changed { margin: 10px 0 0; font-size: 0.84rem; font-weight: 500; color: var(--amber-text); }
+.journey-note { margin: 10px 0 0; max-width: 90ch; }
+
+/* The eight stages along the top */
+.journey-stages { list-style: none; display: flex; flex-wrap: wrap; gap: 4px; margin: 0; padding: 12px 18px; border-bottom: 1px solid var(--line); background: var(--surface); }
+.journey-stages button {
+  padding: 4px 10px; font: inherit; font-size: 0.78rem; cursor: pointer; border-radius: var(--radius);
+  border: 1px solid var(--line-strong); background: var(--inset); color: var(--text);
+}
+.journey-stages button:hover:not(:disabled) { border-color: var(--accent); }
+.journey-stages button.current { background: var(--blue-bg); border-color: var(--accent); color: var(--text-strong); font-weight: 600; box-shadow: inset 0 -2px 0 var(--accent); }
+.journey-stages button:disabled { color: var(--muted); border-style: dashed; cursor: not-allowed; }
+
+.journey-head { padding: 14px 18px 6px; background: var(--surface); }
+.journey-head h2 { margin: 2px 0 6px; }
+.journey-explanation { margin: 0 0 6px; font-size: 0.98rem; color: var(--text-strong); max-width: 80ch; }
+.journey-points { margin: 0 0 8px; padding-left: 18px; font-size: 0.88rem; color: var(--text); max-width: 80ch; }
+.journey-points li { margin: 2px 0; }
+
+.journey-visual { padding: 26px 18px; background: var(--inset); min-height: 200px; border-top: 1px solid var(--line); }
+
+.journey-part { padding: 12px 18px 4px; background: var(--surface); border-top: 1px solid var(--line); }
+.journey-part-count { font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--faint); }
+.journey-caption { margin: 2px 0 8px; font-size: 0.95rem; font-weight: 500; color: var(--text-strong); max-width: 85ch; }
+.journey-panel .output { max-height: 120px; }
+.journey-wait { margin: 0 0 6px; min-height: 1.2em; font-size: 0.84rem; font-weight: 500; color: var(--green-text); }
+.journey-details { margin: 0; padding-left: 18px; }
+.journey-details li { margin: 4px 0; }
+.journey-summary { margin: 0 0 12px; padding-left: 20px; }
+.journey-summary li { margin: 3px 0; }
+
+/* Stage 1: the address split into its parts */
+.url-pieces { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; }
+.url-piece { display: inline-flex; flex-direction: column; align-items: center; gap: 6px; opacity: 0.4; transition: opacity 0.25s; }
+.url-piece.shown { opacity: 1; }
+.url-text { font-family: var(--mono); font-size: clamp(1.1rem, 0.9rem + 1vw, 1.6rem); padding: 6px 10px; border: 1px solid var(--line-strong); background: var(--surface); color: var(--text-strong); word-break: break-all; }
+.url-piece.current .url-text { border: 2px solid var(--accent); background: var(--blue-bg); }
+.url-label { font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.url-piece.current .url-label { color: var(--blue-text); font-weight: 600; }
+
+/* Stage 2: the two caches, and what a hit and a miss mean */
+.cache-boxes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; max-width: 760px; margin: 0 auto; }
+.cache-box { padding: 12px 14px; border: 1px solid var(--line-strong); background: var(--surface); opacity: 0.55; transition: opacity 0.25s; }
+.cache-box.shown { opacity: 1; }
+.cache-box.current { border: 2px solid var(--accent); }
+.cache-box p { margin: 4px 0 0; }
+.cache-result { font-family: var(--mono); font-size: 0.8rem; color: var(--text-strong); }
+.cache-compare { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; max-width: 760px; margin: 14px auto 0; font-size: 0.85rem; color: var(--text); }
+.cache-compare strong { display: block; color: var(--text-strong); }
+
+/* Stage 8: files received on the left, the page on the right */
+.render-flow { display: grid; grid-template-columns: minmax(0, 200px) auto minmax(0, 420px); gap: 18px; align-items: center; justify-content: center; }
+.render-files { display: flex; flex-direction: column; gap: 6px; }
+.render-files .output-label { margin-top: 0; }
+.render-file { padding: 6px 10px; font-family: var(--mono); font-size: 0.85rem; border: 1px solid var(--line-strong); background: var(--surface); opacity: 0.4; }
+.render-file.shown { opacity: 1; }
+.render-file.current { border: 2px solid var(--accent); background: var(--blue-bg); }
+.render-arrow { font-size: 1.6rem; color: var(--muted); }
+.render-screen .output-label { margin-top: 0; }
+.mock-page { min-height: 150px; padding: 14px; border: 1px solid var(--line-strong); }
+.mock-page h3, .mock-page p { margin: 0 0 8px; }
+.mock-output { min-height: 1.2em; }
+/* HTML only: no styling yet, so the browser's plain defaults are used */
+.mock-page.page-html { font-family: "Times New Roman", serif; background: var(--inset); color: var(--text-strong); }
+.mock-page.page-html .mock-button { all: revert; }
+/* With CSS (and later JavaScript): colours, fonts and layout */
+.mock-page.page-css, .mock-page.page-js { background: var(--blue-bg); border-color: var(--accent); }
+.mock-page.page-css h3, .mock-page.page-js h3 { color: var(--blue-text); }
+.mock-page.page-css .mock-button, .mock-page.page-js .mock-button {
+  padding: 6px 14px; border: 1px solid var(--accent-strong); background: var(--accent-strong); color: var(--on-accent);
+  font: inherit; font-weight: 600; cursor: pointer; border-radius: var(--radius);
+}
+
+@media (max-width: 640px) {
+  .cache-boxes, .cache-compare { grid-template-columns: 1fr; }
+  .render-flow { grid-template-columns: 1fr; }
+  .render-arrow { transform: rotate(90deg); justify-self: center; }
+}

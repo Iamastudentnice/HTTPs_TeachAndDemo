@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block title %}The Journey of a Website{% endblock %}
+{% block content %}
+<header class="page-header">
+  <div class="eyebrow">Lab 02 · The journey of a website</div>
+  <h1>Ever wondered what happens when you visit a website?</h1>
+  <p class="lead">Follow your website request from the moment you press Enter to the moment the page appears.</p>
+</header>
+
+<form class="card journey-start" id="journey-form" novalidate>
+  <div class="controls-row">
+    <div class="grow">
+      <label class="field" for="journey-address">Website address</label>
+      <input type="text" id="journey-address" value="google.com" autocomplete="off" spellcheck="false" maxlength="200">
+    </div>
+    <div>
+      <label class="field">Protocol</label>
+      <div class="segmented" id="journey-protocol">
+        <button type="button" class="active is-https" data-value="HTTPS">HTTPS</button>
+        <button type="button" class="is-http" data-value="HTTP">HTTP</button>
+      </div>
+    </div>
+    <div>
+      <button class="btn btn-primary" type="submit" id="journey-start">Start Journey</button>
+    </div>
+  </div>
+  <p class="journey-error" id="journey-error" role="alert" hidden></p>
+  <p class="journey-changed" id="journey-changed" hidden>Press Start Journey to follow the new address.</p>
+  <p class="small muted journey-note">Simulation only: nothing is looked up and no website is contacted.
+    This is a simplified model. Real browsers can skip, combine or reorder some stages because of
+    caching, connections that are already open, the protocol in use and network conditions.</p>
+</form>
+
+<section class="section card sim-card hidden" id="journey">
+  <ol class="journey-stages" id="journey-stages" aria-label="Stages of the journey"></ol>
+
+  <div class="journey-head">
+    <div class="eyebrow"><span id="journey-count">Step 1 of 8</span> · <span id="journey-concept"></span></div>
+    <h2 id="journey-title"></h2>
+    <p class="journey-explanation" id="journey-explanation"></p>
+    <ul class="journey-points" id="journey-points"></ul>
+  </div>
+
+  <!-- Network stages use the same diagram as the other labs; the others draw their own picture. -->
+  <div class="net-diagram" id="journey-diagram"></div>
+  <div class="diagram-legend" id="journey-legend">
+    <span><i style="color:var(--blue)"></i>Normal / readable</span>
+    <span><i style="color:var(--green)"></i>Encrypted</span>
+    <span><i style="color:var(--yellow);border-top-style:dotted"></i>Warning</span>
+    <span><i style="color:var(--grey)"></i>Not used yet</span>
+  </div>
+  <div class="journey-visual" id="journey-visual"></div>
+
+  <div class="journey-part">
+    <div class="journey-part-count" id="journey-part-count"></div>
+    <p class="journey-caption" id="journey-caption" aria-live="polite"></p>
+    <div class="journey-panel hidden" id="journey-panel">
+      <div class="output-label" id="journey-panel-title"></div>
+      <pre class="output" id="journey-panel-text"></pre>
+    </div>
+    <p class="journey-wait" id="journey-wait"></p>
+  </div>
+
+  <div class="player">
+    <div class="btn-group">
+      <button class="btn" type="button" id="journey-prev">Previous Step</button>
+      <button class="btn btn-primary" type="button" id="journey-next">Next Step</button>
+      <button class="btn btn-green" type="button" id="journey-finish-button" hidden>Finish Journey</button>
+      <button class="btn" type="button" id="journey-replay">Replay Current Step</button>
+      <button class="btn" type="button" id="journey-restart">Restart Journey</button>
+    </div>
+  </div>
+
+  <div class="sim-panels">
+    <details class="more">
+      <summary>Technical details for this stage</summary>
+      <div class="more-body"><ul class="journey-details" id="journey-details"></ul></div>
+    </details>
+  </div>
+</section>
+
+<section class="section card hidden" id="journey-end">
+  <h2>That is the journey behind a simple website visit.</h2>
+  <ol class="journey-summary">
+    <li>Your browser read the address.</li>
+    <li>It checked what was already saved.</li>
+    <li>DNS turned the name into an IP address.</li>
+    <li>Your router sent the data out towards the website.</li>
+    <li>A TCP connection was set up.</li>
+    <li id="journey-summary-tls">TLS secured the connection.</li>
+    <li>The browser asked for the page and got it back.</li>
+    <li>The browser drew the page on your screen.</li>
+  </ol>
+  <p class="small muted">Remember: this is a simplified model. Real visits can skip or combine some of these stages.</p>
+  <div class="controls-row">
+    <button class="btn btn-primary" type="button" id="journey-again">Replay Journey</button>
+    <a class="btn" href="{{ url_for('index') }}">Explore other labs</a>
+    <a class="btn" href="{{ url_for('tls_handshake_page') }}">Next lab: TLS 1.3 Handshake</a>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/journey.js') }}"></script>
+{% endblock %}

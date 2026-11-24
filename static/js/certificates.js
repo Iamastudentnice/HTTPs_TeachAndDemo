@@ -1,4 +1,4 @@
-/* certificates.js - Lab 4. */
+/* certificates.js - Lab 5. */
 
 document.addEventListener("DOMContentLoaded", function () {
   let scenario = "valid";

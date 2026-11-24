@@ -1,4 +1,4 @@
-/* mitm.js - Lab 5. */
+/* mitm.js - Lab 6. */
 
 document.addEventListener("DOMContentLoaded", function () {
   const diagram = new NetworkDiagram($("#diagram"));

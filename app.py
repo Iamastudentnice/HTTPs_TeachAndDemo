@@ -6,7 +6,7 @@ from flask import Flask, jsonify, redirect, render_template, request, session, u
 
 import progress
 from simulations import (arp_spoofing, certificates, encryption, http_https, mitm,
-                         packet_inspection, tls_handshake)
+                         packet_inspection, tls_handshake, website_journey)
 
 app = Flask(__name__)
 # The secret key signs the session cookie that stores exploration progress.
@@ -62,22 +62,28 @@ def http_https_page():
                            comparison=http_https.COMPARISON_TABLE, default_message=DEFAULT_MESSAGE)
 
 
+@app.route("/journey")
+def journey_page():
+    """Lab 2 page: the journey of a website."""
+    return render_template("journey.html", active="journey")
+
+
 @app.route("/tls-handshake")
 def tls_handshake_page():
-    """Lab 2 page: TLS handshake."""
+    """Lab 3 page: TLS handshake."""
     return render_template("tls_handshake.html", active="tls_handshake")
 
 
 @app.route("/encryption")
 def encryption_page():
-    """Lab 3 page: encryption laboratory."""
+    """Lab 4 page: encryption laboratory."""
     return render_template("encryption.html", active="encryption",
                            hash_algorithms=list(encryption.HASH_ALGORITHMS.keys()) + ["MD5 (broken)"])
 
 
 @app.route("/certificates")
 def certificates_page():
-    """Lab 4 page: certificate explorer."""
+    """Lab 5 page: certificate explorer."""
     return render_template("certificates.html", active="certificates",
                            scenarios=certificates.SCENARIOS,
                            field_explanations=certificates.FIELD_EXPLANATIONS)
@@ -85,7 +91,7 @@ def certificates_page():
 
 @app.route("/mitm")
 def mitm_page():
-    """Lab 5 page: MITM attack lab. ?scenario=arp (etc.) opens a scenario directly."""
+    """Lab 6 page: MITM attack lab. ?scenario=arp (etc.) opens a scenario directly."""
     start_scenario = request.args.get("scenario", "http_mitm")
     if start_scenario not in mitm.SCENARIOS:
         start_scenario = "http_mitm"
@@ -98,7 +104,7 @@ def mitm_page():
 
 @app.route("/packet-inspection")
 def packet_inspection_page():
-    """Lab 6 page: packet inspector."""
+    """Lab 7 page: packet inspector."""
     return render_template("packet_inspection.html", active="packet_inspection",
                            example_filters=packet_inspection.SUPPORTED_FILTERS)
 
@@ -118,7 +124,18 @@ def api_http_https():
     })
 
 
-# --- Module 2 - TLS handshake ---
+# --- Module 2 - The journey of a website ---
+
+@app.route("/api/journey", methods=["POST"])
+def api_journey():
+    """Build the eight stages for the typed address. Nothing is looked up or contacted."""
+    data = get_json_data()
+    address = clean_text(data.get("address"), "")
+    protocol = "HTTP" if data.get("protocol") == "HTTP" else "HTTPS"
+    return jsonify(website_journey.build_journey(address, protocol))
+
+
+# --- Module 3 - TLS handshake ---
 
 @app.route("/api/tls/handshake", methods=["POST"])
 def api_tls_handshake():
@@ -129,7 +146,7 @@ def api_tls_handshake():
                     "steps": tls_handshake.build_handshake_steps(message)})
 
 
-# --- Module 3 - Encryption laboratory ---
+# --- Module 4 - Encryption laboratory ---
 
 @app.route("/api/encryption/symmetric/encrypt", methods=["POST"])
 def api_symmetric_encrypt():
@@ -223,7 +240,7 @@ def api_verify():
                                                str(data.get("signature_hex", ""))))
 
 
-# --- Module 4 - Certificates ---
+# --- Module 5 - Certificates ---
 
 @app.route("/api/certificates/scenario", methods=["POST"])
 def api_certificate_scenario():
@@ -240,7 +257,7 @@ def api_certificate_scenario():
     return jsonify(certificates.explore_scenario(scenario, hostname, trusted))
 
 
-# --- Module 5 - MITM lab (including ARP spoofing) ---
+# --- Module 6 - MITM lab (including ARP spoofing) ---
 
 @app.route("/api/mitm/simulate", methods=["POST"])
 def api_mitm():
@@ -260,7 +277,7 @@ def api_arp():
     return jsonify(arp_spoofing.build_arp_steps(str(data.get("defence", "none"))))
 
 
-# --- Module 6 - Packet inspection ---
+# --- Module 7 - Packet inspection ---
 
 @app.route("/api/packets", methods=["POST"])
 def api_packets():

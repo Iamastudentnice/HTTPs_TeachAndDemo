@@ -159,7 +159,7 @@ def simulate_http(message, eavesdropper_enabled):
 def simulate_https(message, eavesdropper_enabled):
     """Steps for sending the same message over HTTPS, using real AES-256-GCM encryption."""
     request_text = build_http_request(message)
-    # Real TLS gets this key from the handshake (Lab 02). Here we just make a random one.
+    # Real TLS gets this key from the handshake (Lab 03). Here we just make a random one.
     encrypted = encryption.symmetric_encrypt(request_text)
     ciphertext = encrypted["combined_hex"]
     steps = []
