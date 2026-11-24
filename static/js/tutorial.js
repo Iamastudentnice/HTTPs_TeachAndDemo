@@ -213,6 +213,7 @@ function removeGuideBox() {
   guide.target = null;
   guide.index = -1;
   clearTimeout(guide.warningTimer);
+  clearTimeout(guide.skipTimer);
   window.removeEventListener("scroll", positionGuide, true);
   window.removeEventListener("resize", positionGuide);
 }
@@ -256,15 +257,15 @@ function showGuideStep(index) {
     '<p class="guide-warning" role="alert"></p>' +
     '<div class="guide-controls">' +
     (index > 0 ? '<button class="btn btn-sm" data-guide="back">Back</button>' : "") +
-    '<button class="btn btn-sm btn-primary" data-guide="next">' + (last ? "Finish" : "Next") + "</button>" +
-    '<button class="btn btn-sm skip" data-guide="skip">Skip tutorial</button>' +
+    '<button class="btn btn-sm skip" data-guide="skip">' + skipLabel(false) + "</button>" +
+    '<button class="btn btn-sm btn-primary next" data-guide="next">' + (last ? "Finish" : "Next") + "</button>" +
     "</div>");
 
   $all("[data-guide]", box).forEach(function (button) {
     button.addEventListener("click", function () {
       const action = button.dataset.guide;
       if (action === "back") showGuideStep(guide.index - 1);
-      else if (action === "skip") closeGuide();
+      else if (action === "skip") pressSkip(button);
       else tryToAdvance();
     });
   });
@@ -305,6 +306,27 @@ function tryToAdvance() {
   }
   if (guide.index === GUIDE_STEPS.length - 1) showLabComplete();
   else showGuideStep(guide.index + 1);
+}
+
+// Skip is padlocked so one stray click cannot end the tutorial:
+// the first click unlocks it, a second click within 4 seconds skips.
+function skipLabel(unlocked) {
+  return '<svg class="icon"><use href="#i-' + (unlocked ? "unlock" : "lock") + '"/></svg>' +
+    (unlocked ? "Click again to skip" : "Skip tutorial");
+}
+
+function pressSkip(button) {
+  if (button.classList.contains("is-unlocked")) {
+    closeGuide();
+    return;
+  }
+  button.classList.add("is-unlocked");
+  button.innerHTML = skipLabel(true);
+  clearTimeout(guide.skipTimer);
+  guide.skipTimer = setTimeout(function () {
+    button.classList.remove("is-unlocked");
+    button.innerHTML = skipLabel(false);
+  }, 4000);
 }
 
 // One red warning inside the box. Clicking again restarts its timer instead of adding another.
