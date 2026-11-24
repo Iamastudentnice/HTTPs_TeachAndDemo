@@ -918,6 +918,7 @@ const GUIDE_STEPS = [
     todo: "Tick the eavesdropper box and send again, or open a lab from the list.",
     target: "#observer-option",
     also: ["#sidebar"],
+    place: "top",   // above the box, so the diagram (where the eavesdropper appears) stays visible
   },
 ];
 
@@ -939,7 +940,13 @@ function startGuide() {
   showGuideStep(0);
 }
 
+// Phones get a note docked to the bottom of the screen instead of a floating one.
+function isNarrowScreen() {
+  return window.innerWidth <= 640;
+}
+
 function closeGuide() {
+  document.body.style.paddingBottom = "";
   guide.highlighted.forEach(function (element) { element.classList.remove("guide-target"); });
   guide.highlighted = [];
   if (guide.box) guide.box.remove();
@@ -995,7 +1002,13 @@ function showGuideStep(index) {
   const target = $(step.target);
   if (isVisible(target)) {
     guide.target = target;
-    target.scrollIntoView({ block: "center", behavior: "auto" });
+    if (isNarrowScreen()) {
+      // Put the target near the top, so the docked note underneath does not hide it.
+      const headerHeight = $(".site-header").offsetHeight;
+      window.scrollTo(0, window.scrollY + target.getBoundingClientRect().top - headerHeight - 16);
+    } else {
+      target.scrollIntoView({ block: "center", behavior: "auto" });
+    }
   }
   positionGuide();
   window.addEventListener("scroll", positionGuide, true);
@@ -1016,13 +1029,26 @@ function positionGuide() {
   let top;
   let side;
 
-  if (!guide.target) {
+  if (isNarrowScreen()) {
+    // Docked at the bottom. Extra page padding means nothing is ever stuck behind it.
+    side = "dock";
+    left = 12;
+    top = viewHeight - boxHeight - 12;
+    document.body.style.paddingBottom = (boxHeight + 24) + "px";
+  } else if (!guide.target) {
+    document.body.style.paddingBottom = "";
     side = "center";
     left = (viewWidth - boxWidth) / 2;
     top = (viewHeight - boxHeight) / 2;
   } else {
+    document.body.style.paddingBottom = "";
     const rect = guide.target.getBoundingClientRect();
-    if (rect.right + gap + boxWidth < viewWidth - 8 && rect.width < viewWidth / 2) {
+    const step = GUIDE_STEPS[guide.index];
+    if (step.place === "top" && rect.top - gap - boxHeight > 60) {
+      side = "top";
+      left = rect.right - boxWidth;
+      top = rect.top - gap - boxHeight;
+    } else if (rect.right + gap + boxWidth < viewWidth - 8 && rect.width < viewWidth / 2) {
       side = "right";
       left = rect.right + gap;
       top = Math.max(rect.top, Math.min(rect.top + 8, viewHeight - boxHeight - 8));
@@ -1041,6 +1067,13 @@ function positionGuide() {
   box.className = "guide at-" + side;
   box.style.left = left + "px";
   box.style.top = top + "px";
+
+  // Point the little arrow at the middle of the target (or its left part if it is wide).
+  if (guide.target) {
+    const rect = guide.target.getBoundingClientRect();
+    const aim = Math.min(rect.left + rect.width / 2, rect.left + 60) - left - 5;
+    box.style.setProperty("--arrow-x", Math.max(14, Math.min(aim, boxWidth - 24)) + "px");
+  }
 }
 
 function setupGuide() {

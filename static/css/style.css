@@ -678,9 +678,9 @@ details.more .more-body p:last-child { margin-bottom: 0; }
   border-left: 1px solid var(--line-strong); border-top: 1px solid var(--line-strong);
 }
 .guide.at-right::before { left: -6px; top: 22px; transform: rotate(-45deg); }
-.guide.at-bottom::before { top: -7px; left: 28px; transform: rotate(45deg); border-color: var(--accent); }
-.guide.at-top::before { bottom: -6px; left: 28px; transform: rotate(225deg); }
-.guide.at-center::before { display: none; }
+.guide.at-bottom::before { top: -7px; left: var(--arrow-x, 28px); transform: rotate(45deg); border-color: var(--accent); }
+.guide.at-top::before { bottom: -6px; left: var(--arrow-x, 28px); transform: rotate(225deg); }
+.guide.at-center::before, .guide.at-dock::before { display: none; }
 
 /* ---------- Footer ---------- */
 

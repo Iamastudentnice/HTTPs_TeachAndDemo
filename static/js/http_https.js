@@ -70,6 +70,16 @@ document.addEventListener("DOMContentLoaded", function () {
       : "Scrambled - only where it is going is visible";
   }
 
+  // Empty the comparison, e.g. when the message changes and the old results no longer match.
+  function clearComparison() {
+    ["HTTP", "HTTPS"].forEach(function (protocol) {
+      const side = protocol.toLowerCase();
+      tried[protocol] = false;
+      setOutput($("#compare-" + side), "", "Send a message with " + protocol + " to fill this in.");
+      $("#compare-" + side + "-note").textContent = "Not tried yet";
+    });
+  }
+
   // Show a short hint about what to do next, and highlight that control.
   function updateHint() {
     const hint = $("#lesson-hint");
@@ -142,6 +152,8 @@ document.addEventListener("DOMContentLoaded", function () {
   eavesdropperBox.addEventListener("change", settingsChanged);
   messageBox.addEventListener("input", function () {
     if (player.steps.length) player.reset();
+    clearComparison();
+    updateHint();
     $("#client-view").textContent = messageBox.value;
   });
 

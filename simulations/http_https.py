@@ -61,7 +61,7 @@ def diagram_nodes(eavesdropper_enabled):
     With the observer turned on, the eavesdropper sits in the middle.
     """
     browser = make_node(CLIENT, "Your Browser", CLIENT_IP, "laptop", "client")
-    website = make_node(SERVER, "Website", "server: " + SERVER_NAME, "server", "server")
+    website = make_node(SERVER, "Website", SERVER_NAME, "server", "server")
     if not eavesdropper_enabled:
         return [browser, website]
     observer = make_node(NETWORK, "Wi-Fi Eavesdropper", "watching public Wi-Fi", "attacker", "attacker")
