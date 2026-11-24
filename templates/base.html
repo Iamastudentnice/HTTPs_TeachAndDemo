@@ -46,27 +46,30 @@
 
 <header class="site-header">
   <button class="btn btn-sm menu-button" id="menu-button" aria-controls="sidebar">Labs</button>
-  <a class="brand" href="{{ url_for('index') }}">
+  <a class="brand" href="/">
     <span class="brand-mark" aria-hidden="true">TLS</span>
     <span class="brand-name">HTTPS Learning Lab</span>
   </a>
   <nav class="header-nav" aria-label="Main">
-    <a href="{{ url_for('index') }}" class="{{ 'active' if active == 'home' }}">Overview</a>
+    <a href="/" class="{{ 'active' if active == 'http_https' }}">Learn HTTPS</a>
+    <a href="{{ url_for('index') }}" class="{{ 'active' if active == 'home' }}">All Labs</a>
     <a href="{{ url_for('mitm_page') }}" class="{{ 'active' if active == 'mitm' }}">MITM Lab</a>
   </nav>
   <span class="header-spacer"></span>
-  <button class="btn btn-sm" id="quick-guide-button" type="button">Quick Guide</button>
+  <button class="btn btn-tutorial" id="quick-guide-button" type="button" data-start-guide>Start Here &mdash; Learn HTTPS</button>
 </header>
 
 <div class="app">
   <aside class="sidebar" id="sidebar" aria-label="Laboratory index">
     <nav class="nav">
-      <div class="nav-label">Laboratory index</div>
       {% for module in progress.modules %}
+        {# The first lab is the core lesson; everything after it goes deeper. #}
+        {% if loop.first %}<div class="nav-label">Core lesson</div>{% endif %}
+        {% if loop.index == 2 %}<div class="nav-label nav-label-gap">Explore deeper</div>{% endif %}
         <a href="{{ url_for(module.endpoint) }}" data-module="{{ module.slug }}"
            class="{{ 'active' if active == module.slug }} {{ 'featured' if module.slug == 'mitm' }}">
           <span class="num">{{ '%02d' % module.number }}</span>
-          <span>{{ module.title }}{% if module.slug == 'mitm' %}<span class="feature-tag">Featured</span>{% endif %}</span>
+          <span>{{ module.title }}{% if loop.first %}<span class="start-tag">Start here</span>{% endif %}{% if module.slug == 'mitm' %}<span class="feature-tag">Featured</span>{% endif %}</span>
           <span class="status" title="{{ module.done }} of {{ module.total }} activities explored">{% if module.complete %}✓{% endif %}</span>
         </a>
         {% if module.slug == 'mitm' %}
@@ -77,6 +80,7 @@
         </div>
         {% endif %}
       {% endfor %}
+      <a href="{{ url_for('index') }}" class="{{ 'active' if active == 'home' }} all-labs"><span class="num">··</span><span>All labs overview</span><span></span></a>
     </nav>
     <div class="sidebar-foot">
       <div class="row"><span>Explored <strong id="sidebar-percent">{{ progress.percent }}%</strong></span>

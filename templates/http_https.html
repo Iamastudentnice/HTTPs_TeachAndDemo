@@ -2,36 +2,52 @@
 {% block title %}HTTP vs HTTPS{% endblock %}
 {% block content %}
 <header class="page-header">
-  <div class="eyebrow">Lab 01 · HTTP vs HTTPS</div>
-  <h1>HTTP Is Readable. HTTPS Is Not.</h1>
-  <p class="lead">Send a login over each protocol and compare what an eavesdropper captures.</p>
+  <div class="eyebrow">Start here · The core lesson</div>
+  <h1>What Does HTTPS Actually Do?</h1>
+  <p class="lead">See what happens to your details when your browser sends them to a website.</p>
 </header>
+
+<div class="lesson-intro">
+  <dl class="plain-terms">
+    <dt><span class="tag tag-blue">HTTP</span></dt>
+    <dd>Your information travels without encryption. Someone monitoring the connection may be able to read it.</dd>
+    <dt><span class="tag tag-green">HTTPS</span></dt>
+    <dd>Your information is encrypted while travelling between your browser and the website, making it much harder for others to read.</dd>
+    <dt><span class="tag">Padlock</span></dt>
+    <dd>The padlock indicates a protected HTTPS connection. It does not guarantee that the website itself is trustworthy.</dd>
+  </dl>
+  <div class="lesson-start">
+    <p class="small muted">New to this? A short guided tour walks you through it.</p>
+    <button class="btn btn-tutorial" type="button" data-start-guide>Start Here &mdash; Learn HTTPS</button>
+  </div>
+</div>
 
 <section class="card sim-card">
   <div class="sim-toolbar">
     <div class="controls-row" style="width:100%">
       <div>
-        <label class="field">Protocol</label>
+        <label class="field">1. Choose a protocol</label>
         <div class="segmented" id="protocol-toggle">
           <button class="active is-http" data-value="HTTP">HTTP</button>
           <button class="is-https" data-value="HTTPS">HTTPS</button>
         </div>
       </div>
-      <div>
-        <label class="field">Attacker</label>
-        <label class="checkbox"><input type="checkbox" id="eavesdropper" checked> Eavesdropper on the Wi-Fi (passive)</label>
-      </div>
       <div class="grow">
-        <label class="field" for="message">Login form - type your own (fake) details</label>
+        <label class="field" for="message">2. Demo login (fictional details - never type a real password)</label>
         <textarea id="message" rows="2">{{ default_message }}</textarea>
+      </div>
+      <div>
+        <label class="field">Optional</label>
+        <label class="checkbox" id="observer-option"><input type="checkbox" id="eavesdropper"> Add a Wi-Fi eavesdropper</label>
       </div>
     </div>
   </div>
+  <p class="lesson-hint" id="lesson-hint" aria-live="polite">Press Send message to begin.</p>
   <div class="net-diagram" id="diagram"></div>
   <div class="diagram-legend">
-    <span><i style="color:var(--blue)"></i>Unencrypted</span>
+    <span><i style="color:var(--blue)"></i>Not encrypted</span>
     <span><i style="color:var(--green)"></i>Encrypted</span>
-    <span><i style="color:var(--red);border-top-style:dashed"></i>Attacker</span>
+    <span><i style="color:var(--red);border-top-style:dashed"></i>Eavesdropper</span>
     <span><i style="color:var(--yellow);border-top-style:dotted"></i>Warning</span>
     <span><i style="color:var(--grey)"></i>Inactive</span>
   </div>
@@ -53,23 +69,38 @@
         </div>
       </div>
       <div>
-        <div class="output-label" style="margin-top:0">On the wire</div>
+        <div class="output-label" style="margin-top:0">What your browser sends</div>
         <pre class="output empty" id="wire-view">Press "Send message" to see the data leave your browser.</pre>
       </div>
     </div>
 
+    <!-- Fills in as you try each protocol, so the two can be compared side by side. -->
+    <div class="compare-box section" id="compare-box">
+      <div class="output-label" style="margin-top:0">Compare: what anyone on the network path can see</div>
+      <div class="diff">
+        <div>
+          <div class="compare-head"><span class="tag tag-blue">HTTP</span> <span id="compare-http-note" class="small muted">Not tried yet</span></div>
+          <pre class="output empty" id="compare-http">Send a message with HTTP to fill this in.</pre>
+        </div>
+        <div>
+          <div class="compare-head"><span class="tag tag-green">HTTPS</span> <span id="compare-https-note" class="small muted">Not tried yet</span></div>
+          <pre class="output empty" id="compare-https">Send a message with HTTPS to fill this in.</pre>
+        </div>
+      </div>
+    </div>
+
     <div class="view-grid section">
-      <div class="view-box attacker">
-        <h4><svg class="icon"><use href="#i-attacker"/></svg> Eavesdropper captured</h4>
+      <div class="view-box attacker hidden" id="attacker-box">
+        <h4><svg class="icon"><use href="#i-attacker"/></svg> What the eavesdropper read</h4>
         <div id="attacker-status"></div>
         <pre class="output empty" id="attacker-view">Nothing captured yet.</pre>
       </div>
       <div class="view-box server">
-        <h4><svg class="icon"><use href="#i-server"/></svg> Server received</h4>
+        <h4><svg class="icon"><use href="#i-server"/></svg> What the website received</h4>
         <pre class="output empty" id="server-view">Nothing received yet.</pre>
       </div>
       <div class="view-box">
-        <h4><svg class="icon"><use href="#i-packets"/></svg> Packet log - select to inspect</h4>
+        <h4><svg class="icon"><use href="#i-packets"/></svg> Packets sent - select one to inspect</h4>
         <ul class="packet-log" id="packet-log"></ul>
       </div>
     </div>
@@ -78,12 +109,24 @@
 
 <section class="section">
   <details class="more">
-    <summary>Technical details: HTTP, HTTPS and TLS defined</summary>
+    <summary>Key words in plain English</summary>
     <div class="more-body">
-      <p><span class="tag tag-blue">HTTP</span> HyperText Transfer Protocol - the language browsers and servers use. It sends everything as readable text (port 80).</p>
-      <p><span class="tag tag-green">HTTPS</span> Exactly the same HTTP messages, carried inside an encrypted TLS connection (port 443).</p>
-      <p><span class="tag">TLS</span> Transport Layer Security - encrypts the data, detects tampering, and checks the server's certificate.</p>
-      <p><span class="tag tag-yellow">Why</span> The web started on HTTP. Once people sent passwords and card numbers, anyone on the path could read or alter them.</p>
+      <p><strong>Browser</strong> - the app you use to visit websites, such as Chrome, Safari or Firefox.</p>
+      <p><strong>Server</strong> - the computer that provides the website.</p>
+      <p><strong>Encryption</strong> - scrambling information so unauthorised people cannot easily read it. Only someone with the right key can unscramble it.</p>
+      <p><strong>TLS</strong> - the technology that protects HTTPS connections. HTTPS is simply HTTP sent through TLS.</p>
+      <p><strong>Certificate</strong> - information used to verify a website's identity, a bit like an ID card for the website.</p>
+      <p><strong>Packet</strong> - a small piece of data travelling across the network. Your message is carried in packets.</p>
+    </div>
+  </details>
+  <details class="more">
+    <summary>Learn more: what HTTPS does and does not protect</summary>
+    <div class="more-body">
+      <p><strong>It protects your data in transit.</strong> The contents of what you send and receive are encrypted, and any change made on the way is detected.</p>
+      <p><strong>It does not hide everything.</strong> The network can still see which website you connect to, your IP address, and when and how much data is sent.</p>
+      <p><strong>The certificate proves identity, it does not do the encrypting.</strong> It lets your browser check it is talking to the real website. The data itself is encrypted with a separate secret key agreed at the start (see Lab 02).</p>
+      <p><strong>It cannot judge the website.</strong> Scam sites can use HTTPS too, and HTTPS cannot protect a device that already has malware.</p>
+      <p><strong>Watching is not the same as tampering.</strong> The eavesdropper here only watches (a passive attack). Attackers who actively change or fake traffic are covered in the MITM lab.</p>
     </div>
   </details>
   <details class="more">
@@ -99,9 +142,6 @@
           </tbody>
         </table>
       </div>
-      <p style="margin-top:12px">Before any HTTP data is sent, TLS agrees a fresh secret key with the server (Lab 02), checks the
-        server's certificate (Lab 04), then encrypts every request and response with authenticated encryption, so it
-        can't be read <em>or</em> silently changed on the way.</p>
     </div>
   </details>
 </section>

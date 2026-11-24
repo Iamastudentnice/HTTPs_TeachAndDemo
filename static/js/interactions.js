@@ -853,6 +853,8 @@ class StepPlayer {
     // Draw attention to Next Step only while the current step is finished and waiting for it.
     const waitingForNext = loaded && this.stepDone && !atEnd && !choice;
     this.buttons.next.classList.toggle("is-next", waitingForNext);
+    // Before anything has been sent, the start button is the next thing to press.
+    this.buttons.start.classList.toggle("is-next", !loaded && !this.loading);
     if (!loaded) this.waitElement.textContent = "";
     else if (waitingForNext) this.waitElement.textContent = "Press Next Step to continue.";
     else if (choice && this.stepDone) this.waitElement.textContent = "Choose an option above to continue.";
@@ -874,30 +876,52 @@ function setupProgressReset() {
   });
 }
 
-/* Quick Guide - three small coach marks that explain how to use the lab.
-   It never advances by itself and never blocks the page: the user moves
-   through it with Next / Back and can close it at any time with Skip or Esc. */
+/* Tutorial - "Start Here - Learn HTTPS".
+   Five small notes that walk a beginner through the HTTP vs HTTPS lab.
+   It never moves on by itself and never blocks the page: Next, Back,
+   Skip or Esc are always up to the user, and every button stays clickable. */
 
 const GUIDE_STEPS = [
   {
-    title: "Choose a lab",
-    text: "Open any module from the laboratory index.",
-    targets: ["#sidebar", "#menu-button"],
+    title: "Your browser visits a website",
+    text: "When you visit a website, your browser (the app you browse with) sends " +
+      "information to the website's server (the computer that runs the website).",
+    todo: "Look at the connection, then press Next.",
+    target: "#diagram",
   },
   {
-    title: "Control the simulation",
-    text: "Use Next Step, Replay, or Reset.",
-    targets: ["#player .player"],
+    title: "Try HTTP",
+    text: "HTTP sends your information without encryption, so it travels as readable text.",
+    todo: "Choose HTTP, press Send message, then use Next Step. Select the moving packet to see what it contains.",
+    target: "#protocol-toggle",
+    also: ["#player [data-action=start]"],
   },
   {
-    title: "Inspect packets",
-    text: "Select a packet to reveal its contents.",
-    targets: [".net-diagram .packet", ".net-diagram"],
-    note: "Packets appear once you press Start.",
+    title: "Try HTTPS",
+    text: "HTTPS encrypts your information while it travels. Encryption scrambles it " +
+      "so that only the website can turn it back into readable text.",
+    todo: "Switch to HTTPS, press Send message and step through the same message again.",
+    target: "#protocol-toggle",
+    also: ["#player [data-action=start]"],
+  },
+  {
+    title: "Compare the results",
+    text: "HTTP sends information without encryption. HTTPS protects it while it travels. " +
+      "With HTTPS, the network can still see which website you visit, but not what you send.",
+    todo: "Compare the two columns. If one is empty, send a message with that protocol.",
+    target: "#compare-box",
+  },
+  {
+    title: "Explore further",
+    text: "Turn on the Wi-Fi eavesdropper to see what someone watching the connection could read. " +
+      "The labs under Explore deeper cover certificates, TLS and real attack techniques.",
+    todo: "Tick the eavesdropper box and send again, or open a lab from the list.",
+    target: "#observer-option",
+    also: ["#sidebar"],
   },
 ];
 
-const guide = { index: -1, box: null, target: null };
+const guide = { index: -1, box: null, target: null, highlighted: [] };
 
 // True if an element is actually visible on the page.
 function isVisible(element) {
@@ -906,26 +930,18 @@ function isVisible(element) {
   return rect.right > 0 && rect.left < window.innerWidth && getComputedStyle(element).visibility !== "hidden";
 }
 
-// The first visible element from a list of selectors.
-function findGuideTarget(selectors) {
-  for (let i = 0; i < selectors.length; i++) {
-    const element = $(selectors[i]);
-    if (isVisible(element)) return element;
-  }
-  return null;
-}
-
 function startGuide() {
-  // Pages without a simulation (e.g. the encryption lab) use the home page demo.
-  if (!$("#player .player")) {
-    window.location.href = "/?guide=1";
+  // The tutorial lives on the HTTP vs HTTPS page, so go there first if needed.
+  if (!$("#compare-box")) {
+    window.location.href = "/?tutorial=1";
     return;
   }
   showGuideStep(0);
 }
 
 function closeGuide() {
-  if (guide.target) guide.target.classList.remove("guide-target");
+  guide.highlighted.forEach(function (element) { element.classList.remove("guide-target"); });
+  guide.highlighted = [];
   if (guide.box) guide.box.remove();
   guide.box = null;
   guide.target = null;
@@ -938,24 +954,22 @@ function showGuideStep(index) {
   closeGuide();
   guide.index = index;
   const step = GUIDE_STEPS[index];
-  const target = findGuideTarget(step.targets);
-  const usingPacket = target && target.classList.contains("packet");
+  const last = index === GUIDE_STEPS.length - 1;
 
   const box = document.createElement("div");
   box.className = "guide";
   box.setAttribute("role", "dialog");
-  box.setAttribute("aria-label", "Quick Guide");
+  box.setAttribute("aria-label", "Learn HTTPS tutorial");
   box.innerHTML =
-    '<div class="guide-count"><span>Quick Guide</span><span>' + (index + 1) + " / " + GUIDE_STEPS.length + "</span></div>" +
+    '<div class="guide-count"><span>Learn HTTPS</span><span>Step ' + (index + 1) + " of " + GUIDE_STEPS.length + "</span></div>" +
     '<div class="guide-title">' + escapeHtml(step.title) + "</div>" +
     '<p class="guide-text">' + escapeHtml(step.text) + "</p>" +
-    (step.note && !usingPacket ? '<p class="guide-note">' + escapeHtml(step.note) + "</p>" : "") +
+    '<p class="guide-todo"><strong>What to do:</strong> ' + escapeHtml(step.todo) + "</p>" +
     '<div class="guide-controls">' +
     (index > 0 ? '<button class="btn btn-sm" data-guide="back">Back</button>' : "") +
-    (index < GUIDE_STEPS.length - 1
-      ? '<button class="btn btn-sm btn-primary" data-guide="next">Next</button>'
-      : '<button class="btn btn-sm btn-primary" data-guide="done">Done</button>') +
-    '<button class="btn btn-sm skip" data-guide="skip">Skip</button>' +
+    (last ? '<button class="btn btn-sm btn-primary" data-guide="done">Finish</button>'
+          : '<button class="btn btn-sm btn-primary" data-guide="next">Next</button>') +
+    (last ? "" : '<button class="btn btn-sm skip" data-guide="skip">Skip tutorial</button>') +
     "</div>";
   document.body.appendChild(box);
   guide.box = box;
@@ -969,10 +983,19 @@ function showGuideStep(index) {
     });
   });
 
-  if (target) {
+  // Outline the main element (the note sits next to it) plus any extra ones.
+  const selectors = [step.target].concat(step.also || []);
+  selectors.forEach(function (selector) {
+    const element = $(selector);
+    if (isVisible(element)) {
+      element.classList.add("guide-target");
+      guide.highlighted.push(element);
+    }
+  });
+  const target = $(step.target);
+  if (isVisible(target)) {
     guide.target = target;
-    target.classList.add("guide-target");
-    if (target.id !== "sidebar") target.scrollIntoView({ block: "center", behavior: "auto" });
+    target.scrollIntoView({ block: "center", behavior: "auto" });
   }
   positionGuide();
   window.addEventListener("scroll", positionGuide, true);
@@ -1003,8 +1026,6 @@ function positionGuide() {
       side = "right";
       left = rect.right + gap;
       top = Math.max(rect.top, Math.min(rect.top + 8, viewHeight - boxHeight - 8));
-      // The whole index is outlined, so sit low down and keep the page heading visible.
-      if (guide.target.id === "sidebar") top = viewHeight - boxHeight - 32;
     } else if (rect.bottom + gap + boxHeight < viewHeight - 8) {
       side = "bottom";
       left = rect.left;
@@ -1029,11 +1050,11 @@ function setupGuide() {
   document.addEventListener("keydown", function (event) {
     if (event.key === "Escape" && guide.box) closeGuide();
   });
-  // Opened from another page with the Quick Guide button. Wait for "load" so the
-  // page's own script has built the simulation controls first.
-  if (new URLSearchParams(window.location.search).get("guide") === "1") {
+  // Opened from another page with the tutorial button. Wait for "load" so the
+  // page's own script has finished drawing the diagram first.
+  if (new URLSearchParams(window.location.search).get("tutorial") === "1") {
     window.addEventListener("load", function () {
-      if ($("#player .player")) showGuideStep(0);
+      if ($("#compare-box")) showGuideStep(0);
     });
   }
 }

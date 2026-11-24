@@ -2,7 +2,7 @@
 
 MODULES = [
     {"slug": "http_https", "number": 1, "title": "HTTP vs HTTPS", "endpoint": "http_https_page",
-     "icon": "globe", "summary": "Send a login over HTTP and HTTPS and compare what a Wi-Fi eavesdropper captures.",
+     "icon": "globe", "summary": "Start here. Send the same login over HTTP and HTTPS and see what encryption changes.",
      "activities": {"http": "Run the HTTP simulation", "https": "Run the HTTPS simulation"}},
     {"slug": "tls_handshake", "number": 2, "title": "TLS 1.3 Handshake", "endpoint": "tls_handshake_page",
      "icon": "handshake", "summary": "Step through a TLS 1.3 handshake with a real X25519 key exchange and live session keys.",

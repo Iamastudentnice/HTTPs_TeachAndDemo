@@ -3,13 +3,13 @@
 {% block content %}
 <section class="landing-intro">
   <div>
-    <div class="eyebrow">Network security laboratory</div>
+    <div class="eyebrow">All labs</div>
     <h1>See What HTTPS Protects</h1>
-    <p class="lead">Compare HTTP and HTTPS, explore TLS, inspect certificates, and simulate interception attacks.</p>
+    <p class="lead">Start with the HTTP vs HTTPS lesson, then explore TLS, certificates and attacks.</p>
   </div>
   <div class="intro-actions">
-    <a class="btn btn-primary" href="{{ url_for('mitm_page') }}">Open MITM Lab</a>
-    <button class="btn" type="button" data-start-guide>Start Quick Guide</button>
+    <button class="btn btn-tutorial" type="button" data-start-guide>Start Here &mdash; Learn HTTPS</button>
+    <a class="btn" href="{{ url_for('mitm_page') }}">Open MITM Lab</a>
   </div>
 </section>
 
@@ -17,7 +17,7 @@
 <section class="card sim-card" id="demo">
   <div class="sim-head">
     <div>
-      <div class="eyebrow"><span class="attack">MITM preview</span> · attacker in the middle</div>
+      <div class="eyebrow">Explore deeper · <span class="attack">MITM preview</span></div>
       <h2>Can the attacker read the login?</h2>
     </div>
     <div class="segmented" id="demo-protocol" aria-label="Protocol">
@@ -53,15 +53,17 @@
 
 <section class="section">
   <div class="section-head">
-    <h2>Six labs. Start anywhere.</h2>
-    <span class="small muted">No fixed order</span>
+    <h2>Six labs</h2>
+    <span class="small muted">Start with the core lesson, then go deeper in any order</span>
   </div>
   <ol class="lab-table">
     {% for module in progress.modules %}
+    {% if loop.first %}<li class="lab-group">Core lesson</li>{% endif %}
+    {% if loop.index == 2 %}<li class="lab-group">Explore deeper</li>{% endif %}
     <li class="lab-row {{ 'featured' if module.slug == 'mitm' }}">
       <span class="num">{{ '%02d' % module.number }}</span>
       <div>
-        <h3>{{ module.title }}{% if module.slug == 'mitm' %} <span class="tag tag-red">Featured</span>{% endif %}{% if module.complete %}<span class="done-mark">✓ explored</span>{% endif %}</h3>
+        <h3>{{ module.title }}{% if loop.first %} <span class="tag tag-green">Start here</span>{% endif %}{% if module.slug == 'mitm' %} <span class="tag tag-red">Featured</span>{% endif %}{% if module.complete %}<span class="done-mark">✓ explored</span>{% endif %}</h3>
         <p>{{ module.summary }}</p>
         {% if module.slug == 'mitm' %}
         <div class="scenario-links">
@@ -72,7 +74,7 @@
         </div>
         {% endif %}
       </div>
-      <a class="btn {{ 'btn-primary' if module.slug == 'mitm' }}" href="{{ url_for(module.endpoint) }}">Open lab</a>
+      <a class="btn {{ 'btn-primary' if loop.first }}" href="{{ url_for(module.endpoint) }}">Open lab</a>
     </li>
     {% endfor %}
   </ol>

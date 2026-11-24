@@ -4,7 +4,7 @@ from simulations import encryption
 from simulations.steps import make_node, make_packet, make_step
 
 
-# The three devices drawn on the screen, from left to right.
+# Device ids used in the diagram (left to right).
 CLIENT = "client"
 NETWORK = "network"
 SERVER = "server"
@@ -44,85 +44,96 @@ def short_hex(hex_text, length=64):
 def simulate_transmission(protocol, message, eavesdropper_enabled):
     """Return the full list of steps for sending a message over HTTP or HTTPS."""
     if protocol == "HTTPS":
-        return simulate_https(message, eavesdropper_enabled)
-    return simulate_http(message, eavesdropper_enabled)
+        steps = simulate_https(message, eavesdropper_enabled)
+    else:
+        steps = simulate_http(message, eavesdropper_enabled)
+
+    # Number the steps here, so adding or removing a step never breaks the numbering.
+    for number, step in enumerate(steps, start=1):
+        step["title"] = str(number) + ". " + step["title"]
+    return steps
 
 
 def diagram_nodes(eavesdropper_enabled):
-    """The three devices shown left-to-right."""
-    if eavesdropper_enabled:
-        middle = make_node(NETWORK, "Wi-Fi Eavesdropper", "sniffing public Wi-Fi", "attacker", "attacker")
-    else:
-        middle = make_node(NETWORK, "Wi-Fi Router", "forwards packets", "router", "router")
-    return [
-        make_node(CLIENT, "Your Browser", CLIENT_IP, "laptop", "client"),
-        middle,
-        make_node(SERVER, "Web Server", SERVER_NAME, "server", "server"),
-    ]
+    """The devices shown left-to-right.
+
+    Without the observer it is just your browser and the website.
+    With the observer turned on, the eavesdropper sits in the middle.
+    """
+    browser = make_node(CLIENT, "Your Browser", CLIENT_IP, "laptop", "client")
+    website = make_node(SERVER, "Website", "server: " + SERVER_NAME, "server", "server")
+    if not eavesdropper_enabled:
+        return [browser, website]
+    observer = make_node(NETWORK, "Wi-Fi Eavesdropper", "watching public Wi-Fi", "attacker", "attacker")
+    return [browser, observer, website]
 
 
 def simulate_http(message, eavesdropper_enabled):
-    """Steps for an unencrypted HTTP transmission."""
+    """Steps for sending a message over plain HTTP (no encryption)."""
     request_text = build_http_request(message)
     steps = []
 
     steps.append(make_step(
-        "1. User submits the form",
-        "You typed your details and clicked Log in. The browser will use plain HTTP "
-        "because the address starts with http://.",
+        "You press Log in",
+        "The address starts with http://, so your browser will send your details "
+        "using HTTP, without encryption.",
         highlight={CLIENT: "warning"},
         panels={"address": "http://" + SERVER_NAME + "/login", "secure": False,
                 "client_view": message},
     ))
 
     steps.append(make_step(
-        "2. Browser builds an HTTP request",
-        "HTTP is plain text. The browser writes your data directly into the request "
-        "with no encryption at all.",
+        "Your browser writes the message",
+        "Your details go straight into the message as normal, readable text.",
         highlight={CLIENT: "warning"},
-        panels={"wire_data": request_text},
+        panels={"wire_data": request_text, "network_view": request_text, "network_can_read": True},
     ))
 
-    first_hop_details = {
+    request_details = {
         "Protocol": "HTTP/1.1 over TCP",
         "Source": CLIENT_IP + ":51544",
         "Destination": SERVER_IP + ":80",
         "Encrypted": "No",
     }
-    steps.append(make_step(
-        "3. Packet travels across the Wi-Fi network",
-        "The request leaves your device. Every device it passes through (Wi-Fi router, "
-        "ISP equipment) handles readable text.",
-        packet=make_packet(CLIENT, NETWORK, "plain", "POST /login (plaintext)",
-                           first_hop_details, request_text),
-        highlight={CLIENT: "active"},
-    ))
+    request_packet = "POST /login (readable)"
 
     if eavesdropper_enabled:
         steps.append(make_step(
-            "4. The eavesdropper reads everything",
-            "Someone sniffing the same Wi-Fi captures the packet. Because HTTP has no "
-            "encryption, your username and password are fully readable.",
+            "The message travels over the Wi-Fi",
+            "On its way to the website, the message passes the eavesdropper on the same Wi-Fi.",
+            packet=make_packet(CLIENT, NETWORK, "plain", request_packet, request_details, request_text),
+            highlight={CLIENT: "active"},
+        ))
+        steps.append(make_step(
+            "The eavesdropper reads it",
+            "Because nothing is encrypted, the eavesdropper can read your username and "
+            "password. This is a passive attack: they only watch, they change nothing.",
             highlight={NETWORK: "danger"},
             panels={"attacker_view": request_text, "attacker_can_read": True},
         ))
+        steps.append(make_step(
+            "The website receives your details",
+            "The website gets the message as normal. Neither you nor the website can "
+            "tell that someone else read it.",
+            packet=make_packet(NETWORK, SERVER, "plain", request_packet, request_details, request_text),
+            highlight={SERVER: "active"},
+            panels={"server_view": message},
+        ))
     else:
         steps.append(make_step(
-            "4. The router forwards the packet",
-            "No attacker is present this time, but the data is still readable by any "
-            "device on the path. HTTP offers no protection if someone is listening.",
-            highlight={NETWORK: "warning"},
+            "The message travels to the website",
+            "It crosses several networks on the way, such as your Wi-Fi and your internet "
+            "provider. Anyone watching any of them could read it.",
+            packet=make_packet(CLIENT, SERVER, "plain", request_packet, request_details, request_text),
+            highlight={CLIENT: "active"},
         ))
-
-    steps.append(make_step(
-        "5. Packet reaches the web server",
-        "The server receives the request exactly as sent. HTTP has no integrity "
-        "check, so the server cannot tell if anything was altered on the way.",
-        packet=make_packet(NETWORK, SERVER, "plain", "POST /login (plaintext)",
-                           first_hop_details, request_text),
-        highlight={SERVER: "active"},
-        panels={"server_view": message},
-    ))
+        steps.append(make_step(
+            "The website receives your details",
+            "The website's server reads your message. HTTP has no way to show whether "
+            "it was read or changed on the way.",
+            highlight={SERVER: "active"},
+            panels={"server_view": message},
+        ))
 
     response_text = build_http_response()
     response_details = {
@@ -132,35 +143,31 @@ def simulate_http(message, eavesdropper_enabled):
         "Encrypted": "No",
     }
     steps.append(make_step(
-        "6. Server replies over HTTP",
-        "The response travels back the same way, also as readable text.",
-        packet=make_packet(SERVER, NETWORK, "plain", "200 OK (plaintext)",
-                           response_details, response_text),
+        "The website replies",
+        "The reply comes back the same way, also as readable text.",
+        packet=make_packet(SERVER, CLIENT, "plain", "200 OK (readable)", response_details, response_text),
     ))
     steps.append(make_step(
-        "7. Browser shows 'Not secure'",
-        "The page loads, but the browser warns that the connection is not secure. "
-        "Anything sent over HTTP could have been read or changed.",
-        packet=make_packet(NETWORK, CLIENT, "plain", "200 OK (plaintext)",
-                           response_details, response_text),
+        "Your browser shows \"Not secure\"",
+        "The page loads, but the browser warns you: anything sent over this connection "
+        "could have been read along the way.",
         highlight={CLIENT: "warning"},
     ))
     return steps
 
 
 def simulate_https(message, eavesdropper_enabled):
-    """Steps for an HTTPS transmission, using REAL AES-256-GCM encryption."""
+    """Steps for sending the same message over HTTPS, using real AES-256-GCM encryption."""
     request_text = build_http_request(message)
-    # Encrypt the real request text. In real TLS 1.3 the session key comes from
-    # the handshake (see Module 2); here we generate a random one.
+    # Real TLS gets this key from the handshake (Lab 02). Here we just make a random one.
     encrypted = encryption.symmetric_encrypt(request_text)
     ciphertext = encrypted["combined_hex"]
     steps = []
 
     steps.append(make_step(
-        "1. User submits the form",
-        "The address starts with https://, so the browser will protect this data with "
-        "TLS before sending anything.",
+        "You press Log in",
+        "The address starts with https://, so your browser will encrypt your details "
+        "before they leave your device.",
         highlight={CLIENT: "secure"},
         panels={"address": "https://" + SERVER_NAME + "/login", "secure": True,
                 "client_view": message},
@@ -170,24 +177,30 @@ def simulate_https(message, eavesdropper_enabled):
         "Protocol": "TLS 1.3 handshake",
         "Source": CLIENT_IP + ":51544",
         "Destination": SERVER_IP + ":443",
-        "Purpose": "Agree on keys and verify the server's certificate",
+        "Purpose": "Agree on keys and check the website's certificate",
     }
     steps.append(make_step(
-        "2. TLS handshake",
-        "Browser and server agree on a fresh session key and the browser checks the "
-        "server's certificate. Module 2 shows this handshake in detail.",
+        "Browser and website set up a protected connection",
+        "They agree on a secret key, and the website shows a certificate (an ID that "
+        "proves it really is " + SERVER_NAME + "). This uses TLS, the technology behind HTTPS.",
         packet=make_packet(CLIENT, SERVER, "encrypted", "TLS handshake",
                            handshake_details, "ClientHello / ServerHello / Certificate ..."),
         highlight={CLIENT: "secure", SERVER: "secure"},
     ))
 
+    # What someone on the network path can still see: where it goes, not what it says.
+    network_view = ("Still visible:\n  From: " + CLIENT_IP + "\n  To: " + SERVER_IP + " (port 443)\n"
+                    "  Website name: " + SERVER_NAME + "\n"
+                    "  Size: " + str(encrypted["ciphertext_length"]) + " bytes\n\n"
+                    "Your details (encrypted):\n" + ciphertext)
     steps.append(make_step(
-        "3. Browser encrypts the request",
-        "The same HTTP request is now encrypted with AES-256-GCM using the session key. "
-        "The output below is real ciphertext produced by Python.",
+        "Your browser encrypts the message",
+        "The same message is scrambled with the secret key. Only the website has the "
+        "key to unscramble it. The scrambled text below is real encryption done by Python.",
         highlight={CLIENT: "secure"},
-        panels={"wire_data": "Plaintext (inside your browser only):\n" + request_text +
-                "\n\nEncrypted TLS record (what actually leaves your device):\n" + ciphertext},
+        panels={"wire_data": "Before encryption (only inside your browser):\n" + request_text +
+                "\n\nAfter encryption (what actually leaves your device):\n" + ciphertext,
+                "network_view": network_view, "network_can_read": False},
     ))
 
     encrypted_details = {
@@ -195,48 +208,49 @@ def simulate_https(message, eavesdropper_enabled):
         "Source": CLIENT_IP + ":51544  (visible)",
         "Destination": SERVER_IP + ":443  (visible)",
         "Cipher": "AES-256-GCM (authenticated encryption)",
-        "Encrypted": "Yes - only the payload; addresses and ports remain visible",
+        "Encrypted": "Yes - only the contents; addresses and ports remain visible",
         "Ciphertext length": str(encrypted["ciphertext_length"]) + " bytes",
     }
-    steps.append(make_step(
-        "4. Encrypted packet crosses the network",
-        "Routers can still see where the packet is going (IP address and port 443), "
-        "but the content is unreadable ciphertext.",
-        packet=make_packet(CLIENT, NETWORK, "encrypted", "TLS Application Data",
-                           encrypted_details, ciphertext),
-        highlight={CLIENT: "secure"},
-    ))
 
     if eavesdropper_enabled:
-        attacker_view = ("Visible metadata:\n  Source: " + CLIENT_IP + ":51544\n"
-                         "  Destination: " + SERVER_IP + ":443\n"
-                         "  Server name (SNI, sent during handshake): " + SERVER_NAME + "\n"
-                         "  Size: " + str(encrypted["ciphertext_length"]) + " bytes\n\n"
-                         "Payload:\n" + ciphertext)
         steps.append(make_step(
-            "5. The eavesdropper captures only ciphertext",
-            "The sniffer records the packet but cannot read it without the session key. "
-            "It can still see metadata such as IP addresses, ports, timing and size.",
+            "The encrypted message travels over the Wi-Fi",
+            "It passes the eavesdropper, just like before.",
+            packet=make_packet(CLIENT, NETWORK, "encrypted", "TLS Application Data",
+                               encrypted_details, ciphertext),
+            highlight={CLIENT: "secure"},
+        ))
+        steps.append(make_step(
+            "The eavesdropper sees only scrambled text",
+            "Without the key they cannot read your details. They can still see that you "
+            "are talking to " + SERVER_NAME + ", and when and how much.",
             highlight={NETWORK: "danger"},
-            panels={"attacker_view": attacker_view, "attacker_can_read": False},
+            panels={"attacker_view": network_view, "attacker_can_read": False},
+        ))
+        steps.append(make_step(
+            "The website unscrambles your details",
+            "The website uses the key to read the message. The encryption also lets it "
+            "detect if anyone changed the message on the way.",
+            packet=make_packet(NETWORK, SERVER, "encrypted", "TLS Application Data",
+                               encrypted_details, ciphertext),
+            highlight={SERVER: "secure"},
+            panels={"server_view": message},
         ))
     else:
         steps.append(make_step(
-            "5. The router forwards the encrypted packet",
-            "The router only needs the address to forward the packet. It never sees "
-            "the plaintext.",
-            highlight={NETWORK: "active"},
+            "The encrypted message travels to the website",
+            "Networks on the way can see where it is going, but not what it says.",
+            packet=make_packet(CLIENT, SERVER, "encrypted", "TLS Application Data",
+                               encrypted_details, ciphertext),
+            highlight={CLIENT: "secure"},
         ))
-
-    steps.append(make_step(
-        "6. Server decrypts and verifies",
-        "The server uses the same session key to decrypt. The GCM authentication tag "
-        "proves the data was not modified on the way.",
-        packet=make_packet(NETWORK, SERVER, "encrypted", "TLS Application Data",
-                           encrypted_details, ciphertext),
-        highlight={SERVER: "secure"},
-        panels={"server_view": message},
-    ))
+        steps.append(make_step(
+            "The website unscrambles your details",
+            "The website uses the key to read the message. The encryption also lets it "
+            "detect if anyone changed the message on the way.",
+            highlight={SERVER: "secure"},
+            panels={"server_view": message},
+        ))
 
     response_cipher = encryption.symmetric_encrypt(build_http_response())["combined_hex"]
     response_details = {
@@ -246,10 +260,10 @@ def simulate_https(message, eavesdropper_enabled):
         "Encrypted": "Yes",
     }
     steps.append(make_step(
-        "7. Encrypted response returns",
-        "The reply is encrypted too. Your browser shows the padlock: the connection is "
-        "encrypted and the server proved it owns " + SERVER_NAME + ". The padlock does "
-        "NOT prove the website itself is honest.",
+        "The reply is encrypted too",
+        "Your browser shows a padlock. It means the connection is protected and the "
+        "certificate matched " + SERVER_NAME + ". It does not mean the website itself "
+        "is trustworthy.",
         packet=make_packet(SERVER, CLIENT, "encrypted", "TLS Application Data",
                            response_details, response_cipher),
         highlight={CLIENT: "secure", SERVER: "secure"},
@@ -270,5 +284,7 @@ COMPARISON_TABLE = [
     {"feature": "Server authentication", "http": "None - you cannot tell who answered",
      "https": "Certificate proves the server controls the domain"},
     {"feature": "Browser indicator", "http": "'Not secure' warning",
-     "https": "Padlock / connection details (not a guarantee of honesty)"},
+     "https": "Padlock - the connection is protected, not a promise the site is honest"},
+    {"feature": "Still visible to the network", "http": "Everything",
+     "https": "Which website, IP addresses, timing and size - but not the contents"},
 ]

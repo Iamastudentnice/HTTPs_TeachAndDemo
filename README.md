@@ -58,14 +58,16 @@ press `Ctrl + C` in the terminal to stop the app.
 
 ## Using the app
 
-- **Landing page** (`/`) – a one-line explanation, a live MITM preview (HTTP vs HTTPS) and the list of labs.
-- **Quick Guide** – an optional three-step guide (button in the header). It never advances by itself;
-  use Next / Back, or Skip / Esc to close it.
-- **Six labs**, all reachable from the laboratory index on the left: HTTP vs HTTPS, TLS 1.3 handshake,
-  Encryption, Certificates, MITM attacks (incl. fake certificates, TLS stripping and ARP spoofing),
-  Packet inspection. MITM scenarios can be linked directly, e.g. `/mitm?scenario=arp`.
-- Simulations only run when you press Start. Controls: Start, Pause, Resume, Previous Step, Next Step,
-  Replay, Reset. Select any packet to inspect it.
+- **Start page** (`/`) – the HTTP vs HTTPS lesson. It begins with a simple browser-to-website
+  connection; the Wi-Fi eavesdropper is optional and can be switched on later.
+- **Start Here – Learn HTTPS** (green button) – an optional five-step tutorial. It never moves on by
+  itself: use Next and Back, or Skip / Esc to close it. It can be reopened at any time.
+- **Explore deeper** – the other labs in the left-hand index: TLS 1.3 handshake, Encryption,
+  Certificates, MITM attacks (fake certificates, TLS stripping, ARP spoofing) and Packet inspection.
+  `/labs` lists them all. MITM scenarios can be linked directly, e.g. `/mitm?scenario=arp`.
+- Simulations only move when you press a button: Send message / Start shows the first step, and
+  Next Step moves one step at a time. Select any packet to inspect it.
+- The demo login (John Doe / example123) is fictional. Never type a real password into the app.
 
 ## Structure
 

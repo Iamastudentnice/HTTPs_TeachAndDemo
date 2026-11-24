@@ -28,6 +28,8 @@
   --accent-strong: #4A6A7E;   /* primary buttons - darker for readable button text */
   --accent-hover: #3E5B6D;
   --on-accent: #F9FAF7;
+  --tutorial: #2F6B55;        /* the "Start Here" tutorial button - the one strong colour */
+  --tutorial-hover: #275A48;
 
   /* Meaningful colours: line colour / darker text colour / pale tinted background */
   --blue: #587B91;   --blue-text: #3E6176;   --blue-bg: #E2EAEE;
@@ -755,3 +757,65 @@ details.more .more-body p:last-child { margin-bottom: 0; }
 @media (prefers-reduced-motion: reduce) {
   .btn.is-next { animation: none; box-shadow: 0 0 0 2px rgba(79, 128, 108, 0.22); }
 }
+
+/* ---------- Beginner lesson (HTTP vs HTTPS start page) ---------- */
+
+/* The tutorial button is meant to be the first thing a new visitor notices. */
+.btn-tutorial {
+  background: var(--tutorial); border-color: var(--tutorial); color: var(--on-accent);
+  font-weight: 600; min-height: 36px; padding: 6px 16px;
+}
+.btn-tutorial:hover:not(:disabled) { background: var(--tutorial-hover); border-color: var(--tutorial-hover); }
+.site-header .btn-tutorial { min-height: 34px; }
+
+.lesson-intro {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 16px 32px; align-items: center;
+  margin-bottom: 20px;
+}
+.plain-terms { display: grid; grid-template-columns: 80px 1fr; gap: 6px 12px; margin: 0; font-size: 0.92rem; max-width: 72ch; }
+.plain-terms dt { padding-top: 1px; }
+.plain-terms dd { margin: 0; color: var(--text); }
+.lesson-start { border-left: 2px solid var(--tutorial); padding: 4px 0 4px 16px; max-width: 280px; }
+.lesson-start p { margin: 0 0 8px; }
+
+/* One-line "what to do next" hint above the diagram */
+.lesson-hint {
+  margin: 0; padding: 9px 18px; font-size: 0.88rem; font-weight: 500; color: var(--green-text);
+  background: var(--surface); border-bottom: 1px solid var(--line);
+}
+.lesson-hint::before { content: "→ "; font-family: var(--mono); }
+
+.compare-head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.compare-box .output { max-height: 200px; }
+
+/* Lab index groups */
+.nav-label-gap { margin-top: 14px; }
+.nav .start-tag {
+  display: block; font-family: var(--mono); font-size: 0.64rem; letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--green-text);
+}
+.nav a.all-labs { margin-top: 10px; border-top: 1px solid var(--line); padding-top: 10px; font-size: 0.84rem; }
+
+/* "Press this next" highlights, reusing the gentle Next Step pulse */
+.btn-primary.is-next { background: var(--accent-strong); border-color: var(--accent-strong); color: var(--on-accent); }
+.btn-primary.is-next:hover:not(:disabled) { background: var(--accent-hover); }
+.segmented button.is-next { background: var(--green-bg); color: var(--green-text); animation: next-pulse 2.4s ease-in-out infinite; }
+.checkbox.is-next { background: var(--green-bg); outline: 1px solid var(--green); outline-offset: 3px; animation: next-pulse 2.4s ease-in-out infinite; }
+
+/* Tutorial notes are a little wider to fit the "What to do" line */
+.guide { width: 330px; }
+.guide-todo { margin: 8px 0 0; padding-top: 8px; border-top: 1px solid var(--line-strong); font-size: 0.86rem; color: var(--text); }
+.guide-todo strong { color: var(--green-text); }
+
+@media (max-width: 1080px) {
+  .lesson-intro { grid-template-columns: 1fr; }
+}
+@media (max-width: 640px) {
+  .guide { width: calc(100vw - 24px); }
+  .plain-terms { grid-template-columns: 1fr; }
+  .site-header .btn-tutorial { padding: 4px 10px; font-size: 0.8rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .segmented button.is-next, .checkbox.is-next { animation: none; }
+}
+.lab-group { font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--faint); padding: 14px 4px 6px; border-bottom: 1px solid var(--line); }

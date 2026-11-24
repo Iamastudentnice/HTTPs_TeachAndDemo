@@ -42,22 +42,22 @@ def add_progress_to_templates():
 
 # --- Page routes ---
 
-@app.route("/")
+@app.route("/labs")
 def index():
-    """Landing page: short introduction, live MITM preview and the list of labs."""
+    """Overview of every lab, with a short MITM preview."""
     return render_template("index.html", active="home", default_message=DEFAULT_MESSAGE)
 
 
 @app.route("/present")
 def presentation_page():
-    """The old timed presentation was replaced by the landing page + Quick Guide.
-    Old links are sent to the landing page instead of showing an error."""
-    return redirect(url_for("index"))
+    """The old timed presentation was removed. Old links go to the start page instead."""
+    return redirect(url_for("http_https_page"))
 
 
+@app.route("/")
 @app.route("/http-https")
 def http_https_page():
-    """Lab 1 page: HTTP vs HTTPS."""
+    """Lab 1, HTTP vs HTTPS. This is also the start page for new visitors."""
     return render_template("http_https.html", active="http_https",
                            comparison=http_https.COMPARISON_TABLE, default_message=DEFAULT_MESSAGE)
 
