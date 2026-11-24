@@ -64,7 +64,7 @@ document.addEventListener("DOMContentLoaded", function () {
     logElement: $("#packet-log"),
     startLabel: "Send message",
     introTitle: "Choose HTTP or HTTPS, then press Send message",
-    introText: "Watch your login travel from the browser (left) to the server (right). Tick the eavesdropper box to see what a Wi-Fi sniffer captures.",
+    introText: "Your login travels from the browser (left) to the server (right).",
     loadSteps: function () {
       clearPanels();
       return apiPost("/api/http-https/simulate", currentSettings());

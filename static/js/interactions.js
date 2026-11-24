@@ -98,7 +98,7 @@ function updateSidebarProgress(progress) {
     if (!status) return;
     status.className = "status" + (module.complete ? " done" : module.done > 0 ? " partial" : "");
     status.title = module.done + " of " + module.total + " activities";
-    status.innerHTML = module.complete ? '<svg><use href="#i-check"/></svg>' : "";
+    status.textContent = module.complete ? "✓" : "";
   });
 }
 
@@ -207,6 +207,10 @@ function setupSegmented(group, onChange) {
 
 /* NetworkDiagram - draws devices left-to-right and animates packets. */
 
+const STATE_LABELS = {
+  active: "Active", secure: "Secure", danger: "Alert", warning: "Warning", inactive: "Inactive",
+};
+
 class NetworkDiagram {
   constructor(container) {
     this.container = container;
@@ -216,6 +220,7 @@ class NetworkDiagram {
     this.parked = null;       // the packet currently resting at its destination
     this.animation = null;
     this.onPacketClick = null;
+    this.caption = null;      // short text shown right under the current packet's path
 
     const diagram = this;
     window.addEventListener("resize", function () { diagram.layout(); });
@@ -241,7 +246,8 @@ class NetworkDiagram {
         '<div class="net-icon"><svg><use href="#i-' + node.icon + '"/></svg>' +
         '<span class="net-badge"></span></div>' +
         '<div class="net-label">' + escapeHtml(node.label) + "</div>" +
-        '<div class="net-sublabel">' + escapeHtml(node.sublabel) + "</div>";
+        '<div class="net-sublabel">' + escapeHtml(node.sublabel) + "</div>" +
+        '<div class="net-state"></div>';
       row.appendChild(element);
       node.element = element;
     });
@@ -255,10 +261,16 @@ class NetworkDiagram {
       diagram.addLink(link.from, link.to, "top", link.label || "");
     });
 
+    // Visible instruction (not a hover tooltip) so people know packets are clickable.
     const hint = document.createElement("div");
     hint.className = "diagram-hint";
-    hint.textContent = "Tip: click a packet to inspect it";
+    hint.textContent = "Select a packet to inspect it.";
     this.container.appendChild(hint);
+
+    this.captionElement = document.createElement("div");
+    this.captionElement.className = "diagram-caption hidden";
+    this.captionElement.setAttribute("aria-hidden", "true");
+    this.container.appendChild(this.captionElement);
 
     // Wait one frame so the browser has measured the nodes before drawing lines.
     requestAnimationFrame(function () { diagram.layout(); });
@@ -317,11 +329,52 @@ class NetworkDiagram {
       }
     });
 
+    this.placeCaption();
+
     // Keep a resting packet in the right place after the window is resized.
     if (this.parked && this.packetElement && !this.isAnimating()) {
       const geometry = this.packetGeometry(this.parked.path, this.parked.direction);
       this.packetElement.style.top = geometry.y + "px";
       this.packetElement.style.transform = "translateX(" + geometry.endX + "px)";
+    }
+  }
+
+  /* Show a short caption beside the step's packet, under the line it travels on. */
+  showCaption(text, packet) {
+    this.caption = text ? { text: text, packet: packet || null } : null;
+    this.placeCaption();
+  }
+
+  // Work out where the caption goes (called again after every layout).
+  placeCaption() {
+    const element = this.captionElement;
+    if (!element) return;
+    if (!this.caption) {
+      element.classList.add("hidden");
+      return;
+    }
+    element.textContent = this.caption.text;
+    element.className = "diagram-caption" + (this.caption.packet ? " style-" + this.caption.packet.style : "");
+
+    const width = this.container.clientWidth;
+    const path = this.caption.packet ? this.findPath(this.caption.packet.from, this.caption.packet.to, this.caption.packet.route) : [];
+    if (path.length && path[0].lane === "main") {
+      // Under the line, kept clear of the device labels at each end.
+      const left = Math.min.apply(null, path.map(function (link) { return link.x1; })) + 40;
+      const right = Math.max.apply(null, path.map(function (link) { return link.x2; })) - 40;
+      const span = Math.max(140, right - left);
+      element.style.maxWidth = span + "px";
+      element.style.top = (path[0].y + 18) + "px";
+      element.style.bottom = "";
+      const centre = (left + right) / 2;
+      const own = Math.min(element.offsetWidth, span);
+      element.style.left = Math.max(4, Math.min(centre - own / 2, width - own - 4)) + "px";
+    } else {
+      // No packet (or the top lane): show it along the bottom of the diagram.
+      element.style.maxWidth = Math.max(200, width - 32) + "px";
+      element.style.top = "";
+      element.style.bottom = "14px";
+      element.style.left = "16px";
     }
   }
 
@@ -387,8 +440,8 @@ class NetworkDiagram {
     const arrow = route.direction === "right" ? " →" : "← ";
     element.innerHTML = (route.direction === "left" ? arrow : "") +
       '<svg><use href="#i-' + lockIcon + '"/></svg><span class="label">' + escapeHtml(packet.label) +
-      "</span>" + (route.direction === "right" ? arrow : "");
-    element.title = "Click to inspect this packet";
+      "</span>" + (route.direction === "right" ? arrow : "") + '<span class="inspect">Inspect</span>';
+    element.setAttribute("aria-label", "Inspect packet: " + packet.label);
     const diagram = this;
     element.addEventListener("click", function () {
       showPacketDetails(packet, diagram.nodeNames());
@@ -459,6 +512,8 @@ class NetworkDiagram {
       node.element.classList.remove("state-active", "state-secure", "state-danger", "state-warning", "state-inactive");
       const state = highlights ? highlights[node.id] : null;
       if (state) node.element.classList.add("state-" + state);
+      // A text label as well as a colour, so the state never relies on colour alone.
+      $(".net-state", node.element).textContent = state ? STATE_LABELS[state] || state : "";
       const badge = $(".net-badge", node.element);
       if (state === "secure") badge.innerHTML = '<svg><use href="#i-lock"/></svg>';
       else if (state === "danger") badge.innerHTML = "!";
@@ -470,6 +525,7 @@ class NetworkDiagram {
   /* Back to grey lines, no highlights, no packet. */
   resetVisuals() {
     this.removePacket();
+    this.showCaption(null);
     this.setHighlights({});
     this.links.forEach(function (link) {
       link.element.classList.remove("link-plain", "link-encrypted", "link-malicious", "link-warning", "dir-left", "dir-right");
@@ -521,13 +577,13 @@ class StepPlayer {
       '<div class="step-panel intro" aria-live="polite"><div class="step-title"></div><p class="step-text"></p><div class="choice-row"></div></div>' +
       '<div class="player">' +
       '  <div class="btn-group">' +
-      '    <button class="btn btn-primary" data-action="start">' + iconSvg("play") + " " + escapeHtml(this.startLabel) + "</button>" +
-      '    <button class="btn" data-action="pause">' + iconSvg("pause") + " Pause</button>" +
-      '    <button class="btn" data-action="resume">' + iconSvg("play") + " Resume</button>" +
-      '    <button class="btn" data-action="prev">' + iconSvg("prev") + " Previous</button>" +
-      '    <button class="btn" data-action="next">Next ' + iconSvg("next") + "</button>" +
-      '    <button class="btn" data-action="replay">' + iconSvg("replay") + " Replay</button>" +
-      '    <button class="btn" data-action="reset">' + iconSvg("stop") + " Reset</button>" +
+      '    <button class="btn btn-primary" data-action="start">' + escapeHtml(this.startLabel) + "</button>" +
+      '    <button class="btn" data-action="pause">Pause</button>' +
+      '    <button class="btn" data-action="resume">Resume</button>' +
+      '    <button class="btn" data-action="prev">Previous Step</button>' +
+      '    <button class="btn" data-action="next">Next Step</button>' +
+      '    <button class="btn" data-action="replay">Replay</button>' +
+      '    <button class="btn" data-action="reset">Reset</button>' +
       "  </div>" +
       '  <label class="speed">Speed <select data-action="speed">' +
       '    <option value="slow">Slow</option><option value="normal" selected>Normal</option><option value="fast">Fast</option>' +
@@ -694,6 +750,7 @@ class StepPlayer {
       Object.assign(panels, earlierStep.panels || {});
     }
     this.diagram.setHighlights(step.highlight);
+    this.diagram.showCaption(step.title, step.packet);
 
     this.renderStep(step, index);
     this.onStep(step, index, panels);
@@ -820,7 +877,184 @@ class StepPlayer {
 
 /* Page start-up */
 
+/* Reset exploration progress (small link at the bottom of the lab index) */
+function setupProgressReset() {
+  const button = $("#reset-progress");
+  if (!button) return;
+  button.addEventListener("click", async function () {
+    if (!confirm("Reset your exploration progress?")) return;
+    await apiPost("/api/progress/reset");
+    window.location.reload();
+  });
+}
+
+/* Quick Guide - three small coach marks that explain how to use the lab.
+   It never advances by itself and never blocks the page: the user moves
+   through it with Next / Back and can close it at any time with Skip or Esc. */
+
+const GUIDE_STEPS = [
+  {
+    title: "Choose a lab",
+    text: "Open any module from the laboratory index.",
+    targets: ["#sidebar", "#menu-button"],
+  },
+  {
+    title: "Control the simulation",
+    text: "Use Next Step, Replay, or Reset.",
+    targets: ["#player .player"],
+  },
+  {
+    title: "Inspect packets",
+    text: "Select a packet to reveal its contents.",
+    targets: [".net-diagram .packet", ".net-diagram"],
+    note: "Packets appear once you press Start.",
+  },
+];
+
+const guide = { index: -1, box: null, target: null };
+
+// True if an element is actually visible on the page.
+function isVisible(element) {
+  if (!element || !element.getClientRects().length) return false;
+  const rect = element.getBoundingClientRect();
+  return rect.right > 0 && rect.left < window.innerWidth && getComputedStyle(element).visibility !== "hidden";
+}
+
+// The first visible element from a list of selectors.
+function findGuideTarget(selectors) {
+  for (let i = 0; i < selectors.length; i++) {
+    const element = $(selectors[i]);
+    if (isVisible(element)) return element;
+  }
+  return null;
+}
+
+function startGuide() {
+  // Pages without a simulation (e.g. the encryption lab) use the home page demo.
+  if (!$("#player .player")) {
+    window.location.href = "/?guide=1";
+    return;
+  }
+  showGuideStep(0);
+}
+
+function closeGuide() {
+  if (guide.target) guide.target.classList.remove("guide-target");
+  if (guide.box) guide.box.remove();
+  guide.box = null;
+  guide.target = null;
+  guide.index = -1;
+  window.removeEventListener("scroll", positionGuide, true);
+  window.removeEventListener("resize", positionGuide);
+}
+
+function showGuideStep(index) {
+  closeGuide();
+  guide.index = index;
+  const step = GUIDE_STEPS[index];
+  const target = findGuideTarget(step.targets);
+  const usingPacket = target && target.classList.contains("packet");
+
+  const box = document.createElement("div");
+  box.className = "guide";
+  box.setAttribute("role", "dialog");
+  box.setAttribute("aria-label", "Quick Guide");
+  box.innerHTML =
+    '<div class="guide-count"><span>Quick Guide</span><span>' + (index + 1) + " / " + GUIDE_STEPS.length + "</span></div>" +
+    '<div class="guide-title">' + escapeHtml(step.title) + "</div>" +
+    '<p class="guide-text">' + escapeHtml(step.text) + "</p>" +
+    (step.note && !usingPacket ? '<p class="guide-note">' + escapeHtml(step.note) + "</p>" : "") +
+    '<div class="guide-controls">' +
+    (index > 0 ? '<button class="btn btn-sm" data-guide="back">Back</button>' : "") +
+    (index < GUIDE_STEPS.length - 1
+      ? '<button class="btn btn-sm btn-primary" data-guide="next">Next</button>'
+      : '<button class="btn btn-sm btn-primary" data-guide="done">Done</button>') +
+    '<button class="btn btn-sm skip" data-guide="skip">Skip</button>' +
+    "</div>";
+  document.body.appendChild(box);
+  guide.box = box;
+
+  $all("[data-guide]", box).forEach(function (button) {
+    button.addEventListener("click", function () {
+      const action = button.dataset.guide;
+      if (action === "next") showGuideStep(guide.index + 1);
+      else if (action === "back") showGuideStep(guide.index - 1);
+      else closeGuide();
+    });
+  });
+
+  if (target) {
+    guide.target = target;
+    target.classList.add("guide-target");
+    if (target.id !== "sidebar") target.scrollIntoView({ block: "center", behavior: "auto" });
+  }
+  positionGuide();
+  window.addEventListener("scroll", positionGuide, true);
+  window.addEventListener("resize", positionGuide);
+  $("[data-guide=next], [data-guide=done]", box).focus();
+}
+
+// Place the guide box next to its target: to the right, below, or above.
+function positionGuide() {
+  const box = guide.box;
+  if (!box) return;
+  const gap = 14;
+  const boxWidth = box.offsetWidth;
+  const boxHeight = box.offsetHeight;
+  const viewWidth = window.innerWidth;
+  const viewHeight = window.innerHeight;
+  let left;
+  let top;
+  let side;
+
+  if (!guide.target) {
+    side = "center";
+    left = (viewWidth - boxWidth) / 2;
+    top = (viewHeight - boxHeight) / 2;
+  } else {
+    const rect = guide.target.getBoundingClientRect();
+    if (rect.right + gap + boxWidth < viewWidth - 8 && rect.width < viewWidth / 2) {
+      side = "right";
+      left = rect.right + gap;
+      top = Math.max(rect.top, Math.min(rect.top + 8, viewHeight - boxHeight - 8));
+      // The whole index is outlined, so sit low down and keep the page heading visible.
+      if (guide.target.id === "sidebar") top = viewHeight - boxHeight - 32;
+    } else if (rect.bottom + gap + boxHeight < viewHeight - 8) {
+      side = "bottom";
+      left = rect.left;
+      top = rect.bottom + gap;
+    } else {
+      side = "top";
+      left = rect.left;
+      top = rect.top - gap - boxHeight;
+    }
+  }
+  left = Math.max(8, Math.min(left, viewWidth - boxWidth - 8));
+  top = Math.max(8, Math.min(top, viewHeight - boxHeight - 8));
+  box.className = "guide at-" + side;
+  box.style.left = left + "px";
+  box.style.top = top + "px";
+}
+
+function setupGuide() {
+  $all("#quick-guide-button, [data-start-guide]").forEach(function (button) {
+    button.addEventListener("click", startGuide);
+  });
+  document.addEventListener("keydown", function (event) {
+    if (event.key === "Escape" && guide.box) closeGuide();
+  });
+  // Opened from another page with the Quick Guide button. Wait for "load" so the
+  // page's own script has built the simulation controls first.
+  if (new URLSearchParams(window.location.search).get("guide") === "1") {
+    window.addEventListener("load", function () {
+      if ($("#player .player")) showGuideStep(0);
+    });
+  }
+}
+
 document.addEventListener("DOMContentLoaded", function () {
   setupSidebar();
   setupModal();
+  setupProgressReset();
+  setupGuide();
 });

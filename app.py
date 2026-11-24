@@ -2,11 +2,11 @@
 
 import os
 
-from flask import Flask, jsonify, render_template, request, session
+from flask import Flask, jsonify, redirect, render_template, request, session, url_for
 
 import progress
 from simulations import (arp_spoofing, certificates, encryption, http_https, mitm,
-                         packet_inspection, presentation, tls_handshake)
+                         packet_inspection, tls_handshake)
 
 app = Flask(__name__)
 # The secret key signs the session cookie that stores exploration progress.
@@ -14,7 +14,7 @@ app = Flask(__name__)
 app.secret_key = os.environ.get("LAB_SECRET_KEY", os.urandom(32))
 
 MAX_MESSAGE_LENGTH = 300
-DEFAULT_MESSAGE = "Username: Brian\nPassword: example123"
+DEFAULT_MESSAGE = "Username: John Doe\nPassword: example123"
 
 
 # --- Helpers ---
@@ -44,21 +44,15 @@ def add_progress_to_templates():
 
 @app.route("/")
 def index():
-    """Home page: choose Presentation or Exploration mode."""
-    return render_template("index.html", active="home")
+    """Landing page: short introduction, live MITM preview and the list of labs."""
+    return render_template("index.html", active="home", default_message=DEFAULT_MESSAGE)
 
 
 @app.route("/present")
 def presentation_page():
-    """Presentation Mode: the guided two-minute demonstration."""
-    return render_template("presentation.html", active="present",
-                           total_seconds=presentation.TOTAL_SECONDS)
-
-
-@app.route("/api/presentation", methods=["GET"])
-def api_presentation():
-    """Return the whole timed script (scenes + steps) built by Python."""
-    return jsonify(presentation.build_presentation())
+    """The old timed presentation was replaced by the landing page + Quick Guide.
+    Old links are sent to the landing page instead of showing an error."""
+    return redirect(url_for("index"))
 
 
 @app.route("/http-https")
@@ -91,8 +85,12 @@ def certificates_page():
 
 @app.route("/mitm")
 def mitm_page():
-    """Lab 5 page: MITM attack lab."""
+    """Lab 5 page: MITM attack lab. ?scenario=arp (etc.) opens a scenario directly."""
+    start_scenario = request.args.get("scenario", "http_mitm")
+    if start_scenario not in mitm.SCENARIOS:
+        start_scenario = "http_mitm"
     return render_template("mitm.html", active="mitm", scenarios=mitm.SCENARIOS,
+                           start_scenario=start_scenario,
                            scenario_notes=mitm.SCENARIO_NOTES,
                            cert_problems=mitm.CERT_PROBLEMS, arp_defences=arp_spoofing.DEFENCES,
                            default_message=DEFAULT_MESSAGE)

@@ -3,7 +3,7 @@
 document.addEventListener("DOMContentLoaded", function () {
   const diagram = new NetworkDiagram($("#diagram"));
   const PRESETS = {
-    login: { message: "Username: Brian\nPassword: example123", find: "Brian", replace: "Mallory" },
+    login: { message: "Username: John Doe\nPassword: example123", find: "John Doe", replace: "Mallory" },
     payment: { message: "Pay £10 to account 12345678", find: "£10 to account 12345678", replace: "£9,000 to account 66666666" },
   };
 
@@ -132,8 +132,8 @@ document.addEventListener("DOMContentLoaded", function () {
     mount: $("#player"),
     logElement: $("#packet-log"),
     startLabel: "Start Simulation",
-    introTitle: "Choose a scenario, then press Start Simulation",
-    introText: "The victim is on the left, the server on the right, and the attacker sits in the middle. Use Next/Previous to step through.",
+    introTitle: "Press Start Simulation",
+    introText: "Victim on the left, server on the right, attacker in the middle.",
     loadSteps: function () { clearPanels(); return request(); },
     onStep: function (step, index, panels) { renderPanels(panels); },
     onFinish: function () {

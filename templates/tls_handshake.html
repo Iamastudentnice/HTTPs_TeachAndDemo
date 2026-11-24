@@ -2,43 +2,42 @@
 {% block title %}TLS Handshake{% endblock %}
 {% block content %}
 <header class="page-header">
-  <div class="eyebrow">Exploration · Lab 2</div>
-  <h1>The TLS 1.3 Handshake</h1>
-  <p class="lead">Before any web data is sent, browser and server agree on secret keys and the server proves its
-    identity - in a single round trip. Every key below is generated live by Python.</p>
+  <div class="eyebrow">Lab 02 · TLS 1.3 handshake</div>
+  <h1>Agree Keys Before Sending Data</h1>
+  <p class="lead">Seven stages, one round trip. Every key is generated live by Python.</p>
 </header>
 
 <section class="card sim-card">
   <div class="net-diagram" id="diagram"></div>
   <div class="diagram-legend">
-    <span><i style="background:var(--blue)"></i>Sent in the clear</span>
-    <span><i style="background:var(--green)"></i>Encrypted</span>
-    <span><i style="background:var(--grey)"></i>Not yet used</span>
+    <span><i style="color:var(--blue)"></i>Sent in the clear</span>
+    <span><i style="color:var(--green)"></i>Encrypted</span>
+    <span><i style="color:var(--grey)"></i>Not yet used</span>
   </div>
   <div id="player"></div>
-</section>
 
-<section class="section card" id="stage-card">
+  <div class="sim-panels" id="stage-card">
   <div class="grid grid-2">
     <div>
-      <div class="output-label">Who is communicating</div>
+      <div class="output-label" style="margin-top:0">Who is communicating</div>
       <p id="stage-who" class="muted">Start the handshake to see each stage.</p>
       <div class="output-label">What is exchanged</div>
       <pre class="output empty" id="stage-exchanged">-</pre>
     </div>
     <div>
-      <div class="output-label">Why this stage is necessary</div>
+      <div class="output-label" style="margin-top:0">Why this stage is necessary</div>
       <p id="stage-why" class="muted">-</p>
       <div class="output-label">Security purpose</div>
       <div class="callout good" id="stage-purpose">-</div>
       <ul class="small muted" id="stage-extra"></ul>
     </div>
   </div>
+  </div>
 </section>
 
 <section class="section grid grid-2">
   <div class="card">
-    <h3>Ephemeral Diffie-Hellman in one picture</h3>
+    <h3>Both sides compute the same secret</h3>
     <div class="flow">
       <div class="flow-box plain"><strong>Client</strong>private a · public A</div>
       <span class="flow-arrow">⇄</span>
@@ -59,9 +58,12 @@
   </div>
   <div class="card">
     <h3>Certificates authenticate - they don't encrypt your data</h3>
-    <p class="small">The certificate binds <code>shop.example.com</code> to a public key. In <em>CertificateVerify</em>
-      the server signs the handshake with the matching private key, proving it is genuine. Your page data is
-      encrypted with the symmetric session keys from the key exchange.</p>
+    <p class="small muted">The certificate proves identity. Session keys encrypt the data.</p>
+    <details class="more"><summary>Technical details: CertificateVerify</summary>
+      <div class="more-body">The certificate binds <code>shop.example.com</code> to a public key. In <em>CertificateVerify</em>
+        the server signs the handshake with the matching private key, proving it is genuine. Your page data is
+        encrypted with the symmetric session keys from the key exchange.</div>
+    </details>
     <details class="more"><summary>Why "ephemeral" matters (forward secrecy)</summary>
       <div class="more-body">The DH keys are thrown away after the session. Even if the server's long-term private
         key is stolen later, recorded traffic cannot be decrypted.</div>
@@ -102,8 +104,8 @@ document.addEventListener("DOMContentLoaded", function () {
     diagram: diagram,
     mount: $("#player"),
     startLabel: "Start handshake",
-    introTitle: "Seven stages, one secure connection",
-    introText: "Press Start handshake. Use Next / Previous to go at your own pace, or click a packet to inspect it.",
+    introTitle: "Press Start handshake",
+    introText: "Use Next Step to go at your own pace.",
     loadSteps: function () { return apiPost("/api/tls/handshake", {}); },
     onStep: function (step) { showStage(step.panels); },
     onFinish: function () { recordProgress("tls_handshake", "handshake"); },

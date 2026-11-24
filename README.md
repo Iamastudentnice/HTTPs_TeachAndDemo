@@ -56,19 +56,23 @@ press `Ctrl + C` in the terminal to stop the app.
 - **Windows: "running scripts is disabled"** – run
   `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` once, then activate again.
 
-## Modes
+## Using the app
 
-- **Presentation Mode** (`/present`) – a self-running 2-minute demo with a timer.
-  Controls: Pause/Resume (Space), Previous/Next scene (← →), Restart.
-- **Exploration Mode** – six labs: HTTP vs HTTPS, TLS handshake, Encryption, Certificates,
-  MITM attacks (incl. ARP spoofing and TLS stripping), Packet inspection.
+- **Landing page** (`/`) – a one-line explanation, a live MITM preview (HTTP vs HTTPS) and the list of labs.
+- **Quick Guide** – an optional three-step guide (button in the header). It never advances by itself;
+  use Next / Back, or Skip / Esc to close it.
+- **Six labs**, all reachable from the laboratory index on the left: HTTP vs HTTPS, TLS 1.3 handshake,
+  Encryption, Certificates, MITM attacks (incl. fake certificates, TLS stripping and ARP spoofing),
+  Packet inspection. MITM scenarios can be linked directly, e.g. `/mitm?scenario=arp`.
+- Simulations only run when you press Start. Controls: Start, Pause, Resume, Previous Step, Next Step,
+  Replay, Reset. Select any packet to inspect it.
 
 ## Structure
 
 ```
 app.py                 Flask routes (pages + JSON API)
 progress.py            Exploration progress
-simulations/           One Python module per lab + presentation.py
+simulations/           One Python module per lab
 templates/             HTML pages
 static/css, static/js  Styling and animations (interactions.js is shared)
 ```

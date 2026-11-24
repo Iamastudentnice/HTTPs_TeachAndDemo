@@ -116,18 +116,19 @@ def dns_packets():
 
 def build_http_capture():
     """An example HTTP login - every byte of the request is readable."""
+    form_body = "username=John+Doe&password=example123"
     request = ("POST /login HTTP/1.1\r\nHost: " + SITE + "\r\n"
-               "Content-Type: application/x-www-form-urlencoded\r\nContent-Length: 38\r\n\r\n"
-               "username=Brian&password=example123").encode("ascii")
+               "Content-Type: application/x-www-form-urlencoded\r\n"
+               "Content-Length: " + str(len(form_body)) + "\r\n\r\n" + form_body).encode("ascii")
     response = ("HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nSet-Cookie: session=7f3a91c2\r\n\r\n"
-                "<h1>Welcome back, Brian</h1>").encode("ascii")
+                "<h1>Welcome back, John Doe</h1>").encode("ascii")
 
     packets = dns_packets() + tcp_handshake(3, 0.030, 80)
     packets.append(make_packet(6, 0.055, "out", CLIENT_IP, SERVER_IP, "HTTP", CLIENT_PORT, 80, "TCP",
                                request, "POST /login HTTP/1.1  (application/x-www-form-urlencoded)",
                                {"name": "Hypertext Transfer Protocol", "visible": True,
                                 "fields": [["Request", "POST /login HTTP/1.1"], ["Host", SITE],
-                                           ["Form data", "username=Brian&password=example123"]]}, True))
+                                           ["Form data", form_body]]}, True))
     packets.append(make_packet(7, 0.077, "in", SERVER_IP, CLIENT_IP, "TCP", 80, CLIENT_PORT, "TCP", b"",
                                "80 → " + str(CLIENT_PORT) + " [ACK]", None, True))
     packets.append(make_packet(8, 0.102, "in", SERVER_IP, CLIENT_IP, "HTTP", 80, CLIENT_PORT, "TCP",
@@ -185,13 +186,13 @@ def build_https_capture():
                                finished_record, "Change Cipher Spec, Application Data",
                                encrypted_layer("Client Finished message"), False))
 
-    request_record = tls_record("POST /login HTTP/1.1\r\nHost: " + SITE + "\r\n\r\nusername=Brian&password=example123")
+    request_record = tls_record("POST /login HTTP/1.1\r\nHost: " + SITE + "\r\n\r\nusername=John+Doe&password=example123")
     packets.append(make_packet(10, 0.099, "out", CLIENT_IP, SERVER_IP, "TLSv1.3", CLIENT_PORT, 443, "TCP",
                                request_record, "Application Data",
                                encrypted_layer("The HTTP POST /login request with the username and password"),
                                False))
 
-    response_record = tls_record("HTTP/1.1 200 OK\r\nSet-Cookie: session=7f3a91c2\r\n\r\n<h1>Welcome back, Brian</h1>")
+    response_record = tls_record("HTTP/1.1 200 OK\r\nSet-Cookie: session=7f3a91c2\r\n\r\n<h1>Welcome back, John Doe</h1>")
     packets.append(make_packet(11, 0.131, "in", SERVER_IP, CLIENT_IP, "TLSv1.3", 443, CLIENT_PORT, "TCP",
                                response_record, "Application Data",
                                encrypted_layer("The HTTP 200 OK response, including the session cookie"),

@@ -4,6 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}HTTPS Learning Lab{% endblock %} · HTTPS &amp; TLS Lab</title>
+  <!-- Fonts: Geist (interface) and IBM Plex Mono (technical values). If offline, the
+       stylesheet falls back to Manrope / system fonts automatically. -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
   <link rel="icon" href="{{ url_for('static', filename='images/favicon.svg') }}" type="image/svg+xml">
 </head>
@@ -39,52 +44,54 @@
   </defs>
 </svg>
 
+<header class="site-header">
+  <button class="btn btn-sm menu-button" id="menu-button" aria-controls="sidebar">Labs</button>
+  <a class="brand" href="{{ url_for('index') }}">
+    <span class="brand-mark" aria-hidden="true">TLS</span>
+    <span class="brand-name">HTTPS Learning Lab</span>
+  </a>
+  <nav class="header-nav" aria-label="Main">
+    <a href="{{ url_for('index') }}" class="{{ 'active' if active == 'home' }}">Overview</a>
+    <a href="{{ url_for('mitm_page') }}" class="{{ 'active' if active == 'mitm' }}">MITM Lab</a>
+  </nav>
+  <span class="header-spacer"></span>
+  <button class="btn btn-sm" id="quick-guide-button" type="button">Quick Guide</button>
+</header>
+
 <div class="app">
-  <aside class="sidebar" id="sidebar">
-    <a class="brand" href="{{ url_for('index') }}">
-      <span class="brand-mark"><svg class="icon"><use href="#i-shield"/></svg></span>
-      <span>HTTPS Learning Lab<small>TLS &amp; MITM training platform</small></span>
-    </a>
-    <nav class="nav" aria-label="Modules">
-      <a href="{{ url_for('index') }}" class="{{ 'active' if active == 'home' }}">
-        <svg class="icon"><use href="#i-home"/></svg> Overview
-      </a>
-      <div class="nav-label">Presentation mode</div>
-      <a href="{{ url_for('presentation_page') }}" class="nav-present {{ 'active' if active == 'present' }}">
-        <svg class="icon"><use href="#i-play"/></svg> 2-minute demo
-      </a>
-      <div class="nav-label">Exploration mode</div>
+  <aside class="sidebar" id="sidebar" aria-label="Laboratory index">
+    <nav class="nav">
+      <div class="nav-label">Laboratory index</div>
       {% for module in progress.modules %}
-        <a href="{{ url_for(module.endpoint) }}" data-module="{{ module.slug }}" class="{{ 'active' if active == module.slug }}">
-          <span class="num">{{ module.number }}</span>
-          <svg class="icon"><use href="#i-{{ module.icon }}"/></svg>
-          {{ module.title }}
-          <span class="status {{ 'done' if module.complete else ('partial' if module.done > 0) }}"
-                title="{{ module.done }} of {{ module.total }} activities">
-            {% if module.complete %}<svg><use href="#i-check"/></svg>{% endif %}
-          </span>
+        <a href="{{ url_for(module.endpoint) }}" data-module="{{ module.slug }}"
+           class="{{ 'active' if active == module.slug }} {{ 'featured' if module.slug == 'mitm' }}">
+          <span class="num">{{ '%02d' % module.number }}</span>
+          <span>{{ module.title }}{% if module.slug == 'mitm' %}<span class="feature-tag">Featured</span>{% endif %}</span>
+          <span class="status" title="{{ module.done }} of {{ module.total }} activities explored">{% if module.complete %}✓{% endif %}</span>
         </a>
+        {% if module.slug == 'mitm' %}
+        <div class="sub">
+          <a href="{{ url_for('mitm_page', scenario='cert_spoof') }}"><span class="num">↳</span>Fake certificate</a>
+          <a href="{{ url_for('mitm_page', scenario='ssl_strip') }}"><span class="num">↳</span>SSL/TLS stripping</a>
+          <a href="{{ url_for('mitm_page', scenario='arp') }}"><span class="num">↳</span>ARP spoofing</a>
+        </div>
+        {% endif %}
       {% endfor %}
     </nav>
-    <div class="sidebar-progress">
-      <div class="row"><span>Exploration progress</span><strong id="sidebar-percent">{{ progress.percent }}%</strong></div>
+    <div class="sidebar-foot">
+      <div class="row"><span>Explored <strong id="sidebar-percent">{{ progress.percent }}%</strong></span>
+        <button class="link-btn" id="reset-progress" type="button">Reset</button></div>
       <div class="progress-bar"><span id="sidebar-bar" style="width: {{ progress.percent }}%"></span></div>
     </div>
   </aside>
   <div class="overlay" id="overlay"></div>
 
   <div class="main">
-    <header class="topbar">
-      <button class="icon-btn" id="menu-button" aria-label="Open navigation"><svg class="icon"><use href="#i-menu"/></svg></button>
-      <span class="brand-mini">HTTPS Learning Lab</span>
-    </header>
     <main class="content">
       {% block content %}{% endblock %}
       <p class="footer-note">
-        Every network, packet, certificate and attack in this lab is simulated inside this application.
-        No real traffic is intercepted and no external systems are contacted. Cryptographic values
-        (ciphertexts, hashes, keys, signatures, certificates) are generated for real by Python's
-        <code>cryptography</code> library.
+        All networks, packets and attacks are simulated inside this application - no real traffic is touched.
+        Keys, ciphertexts, hashes, signatures and certificates are generated for real by Python's <code>cryptography</code> library.
       </p>
     </main>
   </div>
@@ -95,7 +102,7 @@
     <div class="modal-head">
       <span id="modal-tag"></span>
       <h3 id="modal-title">Packet details</h3>
-      <button class="icon-btn" id="modal-close" aria-label="Close"><svg class="icon"><use href="#i-x"/></svg></button>
+      <button class="icon-btn" id="modal-close">Close</button>
     </div>
     <div class="modal-body" id="modal-body"></div>
   </div>

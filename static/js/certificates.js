@@ -135,7 +135,13 @@ document.addEventListener("DOMContentLoaded", function () {
         $all(".cert-field").forEach(function (other) { other.classList.toggle("selected", other === button); });
         const key = button.dataset.field;
         const label = $(".fname", button).textContent.replace(/^i/, "").replace("problem", "").trim();
-        $("#field-help").innerHTML = "<strong>" + escapeHtml(label) + ":</strong> " + escapeHtml(FIELD_EXPLANATIONS[key] || "");
+        // Show the explanation directly under the field that was selected.
+        const old = $(".field-help", $("#certificate"));
+        if (old) old.remove();
+        const help = document.createElement("div");
+        help.className = "callout field-help";
+        help.innerHTML = "<strong>" + escapeHtml(label) + ":</strong> " + escapeHtml(FIELD_EXPLANATIONS[key] || "");
+        button.insertAdjacentElement("afterend", help);
       });
     });
   }
