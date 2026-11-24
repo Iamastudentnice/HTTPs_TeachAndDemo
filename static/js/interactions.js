@@ -533,12 +533,15 @@ class NetworkDiagram {
   }
 }
 
-/* StepPlayer - plays a list of steps with full user control. */
+/* StepPlayer - shows a list of steps, one at a time, under full user control.
+   Nothing advances by itself: every step change needs a click
+   (Start / Send message shows step 1, then Next Step moves on one step). */
 
+// How long a packet takes to cross the diagram (milliseconds).
 const SPEEDS = {
-  slow: { move: 2800, dwell: 3600 },
-  normal: { move: 1900, dwell: 2600 },
-  fast: { move: 1100, dwell: 1500 },
+  slow: { move: 2800 },
+  normal: { move: 1900 },
+  fast: { move: 1100 },
 };
 
 class StepPlayer {
@@ -558,12 +561,11 @@ class StepPlayer {
     this.steps = [];
     this.originalSteps = [];
     this.index = -1;
-    this.playing = false;
-    this.stepDone = false;
+    this.paused = false;   // true while the current packet is paused mid-flight
+    this.stepDone = false; // true once the current step's packet has arrived
     this.finished = false;
     this.loading = false;
-    this.timer = null;
-    this.token = 0;     // increases every time we jump, so old timers are ignored
+    this.token = 0;        // increases every time we jump, so a late "arrived" is ignored
 
     this.buildControls();
     this.showIntro();
@@ -574,7 +576,7 @@ class StepPlayer {
   buildControls() {
     this.mount.innerHTML =
       '<div class="step-progress"><span class="step-counter">Not started</span><div class="step-dots"></div></div>' +
-      '<div class="step-panel intro" aria-live="polite"><div class="step-title"></div><p class="step-text"></p><div class="choice-row"></div></div>' +
+      '<div class="step-panel intro" aria-live="polite"><div class="step-title"></div><p class="step-text"></p><div class="choice-row"></div><p class="step-wait" aria-live="polite"></p></div>' +
       '<div class="player">' +
       '  <div class="btn-group">' +
       '    <button class="btn btn-primary" data-action="start">' + escapeHtml(this.startLabel) + "</button>" +
@@ -596,6 +598,7 @@ class StepPlayer {
     this.titleElement = $(".step-title", this.mount);
     this.textElement = $(".step-text", this.mount);
     this.choiceRow = $(".choice-row", this.mount);
+    this.waitElement = $(".step-wait", this.mount);
     this.speedSelect = $('select[data-action="speed"]', this.mount);
     this.buttons = {};
 
@@ -624,7 +627,7 @@ class StepPlayer {
 
   /* ---------------- Control actions ---------------- */
 
-  // Fetch the steps from Python and start playing.
+  // Fetch the steps from Python and show the first step only.
   async start() {
     if (this.loading) return;
     this.loading = true;
@@ -635,7 +638,6 @@ class StepPlayer {
       this.steps = data.steps;
       this.originalSteps = data.steps.slice();
       this.finished = false;
-      this.playing = true;
       this.loading = false;
       // Give the diagram one frame to lay out before the first packet moves.
       const player = this;
@@ -648,30 +650,23 @@ class StepPlayer {
     }
   }
 
-  // Pause the animation.
+  // Freeze the packet that is currently moving (it stays on this step).
   pause() {
-    this.playing = false;
-    clearTimeout(this.timer);
+    this.paused = true;
     this.diagram.pause();
     this.updateButtons();
   }
 
-  // Continue after a pause.
+  // Let the paused packet finish its journey. This never moves to another step.
   resume() {
-    if (!this.steps.length || this.finished) return;
-    this.playing = true;
-    if (this.stepDone) {
-      this.afterStep();
-    } else {
-      this.diagram.resume();
-    }
+    this.paused = false;
+    this.diagram.resume();
     this.updateButtons();
   }
 
-  // Go to the next step.
+  // Go to the next step (one step per click).
   next() {
     if (this.index < this.steps.length - 1 && !this.waitingForChoice()) {
-      this.playing = false;
       this.goTo(this.index + 1, true);
     }
   }
@@ -679,30 +674,27 @@ class StepPlayer {
   // Go to the previous step.
   prev() {
     if (this.index > 0) {
-      this.playing = false;
       this.finished = false;
       this.goTo(this.index - 1, true);
     }
   }
 
-  // Play the simulation again from the first step.
+  // Go back to the first step and wait there.
   replay() {
     if (!this.originalSteps.length) return;
     this.steps = this.originalSteps.slice();
     this.finished = false;
-    this.playing = true;
     this.goTo(0, true);
   }
 
   // Stop and clear the simulation.
   reset() {
     this.token += 1;
-    clearTimeout(this.timer);
     this.diagram.resetVisuals();
     this.steps = [];
     this.originalSteps = [];
     this.index = -1;
-    this.playing = false;
+    this.paused = false;
     this.finished = false;
     this.stepDone = false;
     this.showIntro();
@@ -718,7 +710,7 @@ class StepPlayer {
     if (!step || !step.branches || !step.branches[choiceId]) return;
     step.chosen = choiceId;
     this.steps = this.steps.slice(0, this.index + 1).concat(step.branches[choiceId]);
-    this.playing = true;
+    // Show the consequence of the choice (one step), then wait again.
     this.goTo(this.index + 1, true);
   }
 
@@ -735,9 +727,9 @@ class StepPlayer {
     if (index < 0 || index >= this.steps.length) return;
     this.token += 1;
     const myToken = this.token;
-    clearTimeout(this.timer);
     this.index = index;
     this.stepDone = false;
+    this.paused = false;
     const step = this.steps[index];
 
     // Rebuild the state of earlier steps instantly (line colours), so that
@@ -766,33 +758,18 @@ class StepPlayer {
     this.updateButtons();
   }
 
-  /* Decide what to do once a step's animation has finished. */
+  /* The step's packet has arrived. Do NOT move on - wait for the user. */
   afterStep() {
-    const step = this.steps[this.index];
-    if (step.choices && !step.chosen) {
-      this.playing = false;
-      this.updateButtons();
-      return;
-    }
-    if (this.index >= this.steps.length - 1) {
+    if (this.index >= this.steps.length - 1 && !this.waitingForChoice()) {
       this.finish();
       return;
-    }
-    if (this.playing) {
-      const wait = this.speed().dwell + (step.packet ? 0 : 600);
-      const player = this;
-      const myToken = this.token;
-      this.timer = setTimeout(function () {
-        if (myToken === player.token && player.playing) player.goTo(player.index + 1, true);
-      }, wait);
     }
     this.updateButtons();
   }
 
-  // End of the simulation / presentation.
+  // The last step has been reached.
   finish() {
     const firstTime = !this.finished;
-    this.playing = false;
     this.finished = true;
     this.updateButtons();
     if (firstTime) this.onFinish(this.steps);
@@ -829,7 +806,6 @@ class StepPlayer {
       dot.setAttribute("aria-label", "Go to " + this.steps[dotIndex].title);
       const player = this;
       dot.addEventListener("click", function () {
-        player.playing = false;
         player.finished = false;
         player.goTo(dotIndex, true);
       });
@@ -865,13 +841,23 @@ class StepPlayer {
     const loaded = this.steps.length > 0;
     const atEnd = this.index >= this.steps.length - 1;
     const choice = this.waitingForChoice();
-    this.buttons.start.disabled = this.loading || (loaded && !this.finished && this.index >= 0 && this.playing);
-    this.buttons.pause.disabled = !loaded || !this.playing;
-    this.buttons.resume.disabled = !loaded || this.playing || this.finished || choice || (atEnd && this.stepDone);
+    const moving = loaded && this.index >= 0 && !this.stepDone;   // a packet is in flight
+    this.buttons.start.disabled = this.loading || (loaded && !this.finished);
+    this.buttons.pause.disabled = !moving || this.paused;
+    this.buttons.resume.disabled = !moving || !this.paused;
     this.buttons.prev.disabled = !loaded || this.index <= 0;
     this.buttons.next.disabled = !loaded || atEnd || choice;
     this.buttons.replay.disabled = !loaded;
     this.buttons.reset.disabled = !loaded;
+
+    // Draw attention to Next Step only while the current step is finished and waiting for it.
+    const waitingForNext = loaded && this.stepDone && !atEnd && !choice;
+    this.buttons.next.classList.toggle("is-next", waitingForNext);
+    if (!loaded) this.waitElement.textContent = "";
+    else if (waitingForNext) this.waitElement.textContent = "Press Next Step to continue.";
+    else if (choice && this.stepDone) this.waitElement.textContent = "Choose an option above to continue.";
+    else if (this.finished) this.waitElement.textContent = "End of the simulation. Use Previous Step, Replay or Reset.";
+    else this.waitElement.textContent = "";
   }
 }
 

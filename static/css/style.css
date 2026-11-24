@@ -735,3 +735,23 @@ details.more .more-body p:last-child { margin-bottom: 0; }
 #outcome .callout { margin: 0 0 12px; }
 /* Certificate field explanation, shown inline under the selected field */
 .cert .field-help { min-height: 0; margin: 0; border-bottom: 1px solid var(--line); font-size: 0.86rem; padding-left: 18px; }
+
+/* "Next Step" when it is the next action: subtle green tint and a slow, gentle pulse */
+.btn.is-next {
+  background: var(--green-bg);
+  border-color: var(--green);
+  color: var(--green-text);
+  animation: next-pulse 2.4s ease-in-out infinite;
+}
+.btn.is-next:hover:not(:disabled) { background: #D3E4D9; border-color: var(--green-text); }
+@keyframes next-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(79, 128, 108, 0); }
+  50% { box-shadow: 0 0 0 4px rgba(79, 128, 108, 0.22); }
+}
+.step-wait { margin: 8px 0 0; font-size: 0.84rem; color: var(--green-text); font-weight: 500; }
+.step-wait:empty { display: none; }
+
+/* Reduced motion: keep the green highlight, turn the pulse off completely */
+@media (prefers-reduced-motion: reduce) {
+  .btn.is-next { animation: none; box-shadow: 0 0 0 2px rgba(79, 128, 108, 0.22); }
+}
