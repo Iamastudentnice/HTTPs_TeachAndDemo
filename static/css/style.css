@@ -933,3 +933,6 @@ body.guide-visible .lesson-start { visibility: hidden; }
 .guide-next-hint { margin: 8px 0 -4px; text-align: right; font-size: 0.78rem; font-weight: 600; color: var(--green-text); }
 .guide-next-hint[hidden] { display: none; }
 .guide.at-left::before { right: -6px; left: auto; top: 22px; transform: rotate(135deg); }
+/* When there is no free space for an arrow, its element gets this outline instead */
+.pointer-fallback { outline: 2px dashed var(--tutorial) !important; outline-offset: 3px; }
+.guide.at-corner::before { display: none; }

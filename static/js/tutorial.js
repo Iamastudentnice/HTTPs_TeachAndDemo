@@ -117,6 +117,44 @@ function navigationIsLocked() {
   return tutorialActive && !examinerBypassEnabled;
 }
 
+// The tutorial lives on the HTTP vs HTTPS page (the only page with the comparison box).
+function onTutorialPage() {
+  return Boolean($("#compare-box"));
+}
+
+// Remember the tutorial for this browser tab, so a refresh does not lose progress.
+// Only the tutorial page saves, so other labs cannot overwrite it.
+function saveTutorialState() {
+  if (!onTutorialPage()) return;
+  const state = {
+    active: tutorialActive,
+    step: guide.lastStep,
+    events: tutorialEvents,
+    completionShown: guide.completionShown,
+  };
+  try {
+    window.sessionStorage.setItem("tutorialState", JSON.stringify(state));
+  } catch (error) {
+    // Storage blocked: the tutorial still works, it just cannot survive a refresh.
+  }
+}
+
+function loadTutorialState() {
+  try {
+    return JSON.parse(window.sessionStorage.getItem("tutorialState"));
+  } catch (error) {
+    return null;
+  }
+}
+
+// Reached another page while the tutorial is locked (back button, typed address):
+// go straight back to the tutorial, which then shows the usual warning.
+function returnToTutorialIfNeeded() {
+  if (navigationIsLocked() && !onTutorialPage()) {
+    window.location.replace("/?tutorial=1&blocked=1");
+  }
+}
+
 const guide = {
   index: -1,            // current step, or -1 when no step is showing
   box: null,
@@ -128,6 +166,7 @@ const guide = {
   drag: null,           // offset of the pointer inside the box while dragging
   warningTimer: null,
   completionShown: false,
+  lastStep: 0,          // the step to return to after hiding or a refresh
 };
 
 /* ---------- Completion checks ---------- */
@@ -135,6 +174,7 @@ const guide = {
 // Called by the lab pages when the learner really does something.
 function markTutorialEvent(name) {
   tutorialEvents[name] = true;
+  saveTutorialState();
   refreshGuideStatus();
 
   // If the whole lab is now done and the tutorial is not open, offer the next lab once.
@@ -179,6 +219,7 @@ function setExaminerMode(on) {
   }
   updateExaminerButtons();
   refreshGuideStatus();
+  returnToTutorialIfNeeded();
   showToast(on ? "Examiner mode enabled — tutorial restrictions removed."
                : "Guided mode restored — each section must be completed again.");
 }
@@ -237,9 +278,10 @@ function startGuide() {
     window.location.href = "/?tutorial=1";
     return;
   }
-  // Already running (perhaps hidden): show it again at the same step instead of restarting.
-  if (tutorialActive && guide.box) {
-    showHiddenGuide();
+  // Already running: show it again at the same step instead of restarting.
+  if (tutorialActive) {
+    if (guide.box) showHiddenGuide();
+    else showGuideStep(guide.lastStep);
     return;
   }
   tutorialActive = true;
@@ -250,6 +292,7 @@ function startGuide() {
 // Skip tutorial (after unlocking the padlock): the only normal way to leave early.
 function endTutorial() {
   tutorialActive = false;
+  saveTutorialState();
   closeGuide();
 }
 
@@ -329,6 +372,8 @@ function buildGuideBox(headerRight, bodyHtml, canHide) {
 function showGuideStep(index) {
   removeGuideBox();
   guide.index = index;
+  guide.lastStep = index;
+  saveTutorialState();
   const step = GUIDE_STEPS[index];
   const last = index === GUIDE_STEPS.length - 1;
 
@@ -454,6 +499,7 @@ function showLabComplete() {
   removeGuideBox();
   guide.completionShown = true;
   tutorialActive = false;   // the whole lab is done, so the other labs open again
+  saveTutorialState();
   const box = buildGuideBox("Lab complete",
     '<div class="guide-title">' + escapeHtml(LAB_COMPLETE.title) + "</div>" +
     '<p class="guide-text">' + escapeHtml(LAB_COMPLETE.text) + "</p>" +
@@ -475,7 +521,6 @@ function showLabComplete() {
 function positionGuide() {
   const box = guide.box;
   if (!box || box.classList.contains("is-hidden")) return;
-  const gap = 14;
   const boxWidth = box.offsetWidth;
   const boxHeight = box.offsetHeight;
   const viewWidth = window.innerWidth;
@@ -506,38 +551,10 @@ function positionGuide() {
     top = (viewHeight - boxHeight) / 2;
   } else {
     document.body.style.paddingBottom = "";
-    const rect = guide.target.getBoundingClientRect();
-    const step = GUIDE_STEPS[guide.index];
-    if (step.place === "right" && rect.right + gap + boxWidth < viewWidth - 8) {
-      side = "right";
-      left = rect.right + gap;
-      top = Math.max(rect.top, 60);
-    } else if (step.place === "below" && rect.bottom + gap + boxHeight < viewHeight) {
-      side = "bottom";
-      left = rect.left + 24;
-      top = rect.bottom + gap;
-    } else if (step.place === "top" && rect.top - gap - boxHeight > 60) {
-      side = "top";
-      left = rect.right - boxWidth;
-      top = rect.top - gap - boxHeight;
-    } else if (rect.right + gap + boxWidth < viewWidth - 8 && rect.width < viewWidth / 2) {
-      side = "right";
-      left = rect.right + gap;
-      top = Math.max(rect.top, Math.min(rect.top + 8, viewHeight - boxHeight - 8));
-    } else if (rect.bottom + gap + boxHeight < viewHeight - 8) {
-      side = "bottom";
-      left = rect.left;
-      top = rect.bottom + gap;
-    } else if (rect.left - gap - boxWidth >= 8) {
-      // No room right or below: sit to the left rather than on top of the target.
-      side = "left";
-      left = rect.left - gap - boxWidth;
-      top = Math.max(rect.top, Math.min(rect.top + 8, viewHeight - boxHeight - 8));
-    } else {
-      side = "top";
-      left = rect.left;
-      top = rect.top - gap - boxHeight;
-    }
+    const spot = chooseGuideSpot(guide.target.getBoundingClientRect(), boxWidth, boxHeight);
+    side = spot.side;
+    left = spot.left;
+    top = spot.top;
   }
   box.className = "guide at-" + side;
   moveGuideTo(left, top);
@@ -549,6 +566,81 @@ function positionGuide() {
     box.style.setProperty("--arrow-x", Math.max(14, Math.min(aim, boxWidth - 24)) + "px");
   }
   updatePointers();
+}
+
+// True if two rectangles overlap.
+function rectsOverlap(a, b) {
+  return !(a.right <= b.left || a.left >= b.right || a.bottom <= b.top || a.top >= b.bottom);
+}
+
+// Work out where the tutorial box should go. Every candidate is scored by what it would hide:
+// the step's own target (very bad), the controls this step needs (bad), anything else clickable
+// (a little). The cheapest wins; ties go to the step's preferred side, then to spots beside
+// the target rather than at the window edge.
+function chooseGuideSpot(targetRect, boxWidth, boxHeight) {
+  const gap = 14;
+  const minTop = $(".site-header").offsetHeight + 8;
+  const step = GUIDE_STEPS[guide.index];
+  const sidebar = $("#sidebar");
+  const leftEdge = isVisible(sidebar) ? sidebar.getBoundingClientRect().right + 8 : 8;
+  const rightEdge = window.innerWidth - boxWidth - 16;
+  const bottomEdge = window.innerHeight - boxHeight - 16;
+  const middle = (minTop + bottomEdge) / 2;
+
+  const candidates = [];
+  // Beside the target (only worth trying while the target is on screen).
+  const targetOnScreen = targetRect.bottom > minTop && targetRect.top < window.innerHeight;
+  if (targetOnScreen) {
+    candidates.push({ side: "right", left: targetRect.right + gap, top: targetRect.top });
+    candidates.push({ side: "bottom", left: targetRect.left, top: targetRect.bottom + gap });
+    candidates.push({ side: "left", left: targetRect.left - gap - boxWidth, top: targetRect.top });
+    candidates.push({ side: "top", left: targetRect.right - boxWidth, top: targetRect.top - gap - boxHeight });
+  }
+  // Along the left and right edges of the window.
+  [rightEdge, leftEdge].forEach(function (left) {
+    [bottomEdge, minTop, middle].forEach(function (top) {
+      candidates.push({ side: "corner", left: left, top: top });
+    });
+  });
+
+  // The controls this step needs: what it highlights, what its arrows point at,
+  // and the simulation's Send / Next Step buttons.
+  const needed = [step.target].concat(step.also || []);
+  (step.pointers || []).forEach(function (pointer) { needed.push.apply(needed, pointer.to); });
+  needed.push("#player [data-action=start]", "#player [data-action=next]");
+  const neededRects = needed.map(function (selector) { return $(selector); })
+    .filter(isVisible)
+    .map(function (element) { return element.getBoundingClientRect(); });
+  const otherRects = $all("button, a, input, textarea, select, .packet, .net-node")
+    .filter(function (element) { return isVisible(element) && !guide.box.contains(element); })
+    .map(function (element) { return element.getBoundingClientRect(); });
+
+  let best = null;
+  let lowestCost = Infinity;
+  candidates.forEach(function (candidate) {
+    // Keep every candidate inside the window, exactly as moveGuideTo will.
+    const left = Math.max(8, Math.min(candidate.left, window.innerWidth - boxWidth - 8));
+    const top = Math.max(minTop, Math.min(candidate.top, window.innerHeight - boxHeight - 8));
+    const area = { left: left, top: top, right: left + boxWidth, bottom: top + boxHeight };
+
+    let cost = 0;
+    if (rectsOverlap(area, targetRect)) cost += 1000;
+    neededRects.forEach(function (rect) { if (rectsOverlap(area, rect)) cost += 20; });
+    otherRects.forEach(function (rect) { if (rectsOverlap(area, rect)) cost += 1; });
+    if (candidate.side === "corner") cost += 0.5;                         // prefer beside the target
+    if (step.place && candidate.side !== placeToSide(step.place)) cost += 0.25;
+
+    if (cost < lowestCost) {
+      lowestCost = cost;
+      best = { side: candidate.side, left: left, top: top };
+    }
+  });
+  return best;
+}
+
+// The steps say "below" for the bottom side; everything else uses the side's own name.
+function placeToSide(place) {
+  return place === "below" ? "bottom" : place;
 }
 
 // True if the box, at the position the user dragged it to, would overlap the element.
@@ -614,6 +706,7 @@ function showNavigationWarning() {
 
 function removePointers() {
   $all(".tut-pointer").forEach(function (pointer) { pointer.remove(); });
+  $all(".pointer-fallback").forEach(function (element) { element.classList.remove("pointer-fallback"); });
 }
 
 // Draw the current step's arrows. Called on scroll, resize, drag and twice a second.
@@ -659,13 +752,20 @@ function placePointer(target, text, sides) {
     })
     .map(obstacleRect);
 
-  // Try every side on one line first, then every side again wrapped onto a narrower label.
+  // Try every side on one line first, then wrapped onto a narrower label. On each side the
+  // label can be centred on the target or lined up with either of its edges.
   const attempts = [];
-  sides.forEach(function (side) { attempts.push({ side: side, width: "none" }); });
-  sides.forEach(function (side) { attempts.push({ side: side, width: "150px" }); });
+  ["none", "150px"].forEach(function (width) {
+    sides.forEach(function (side) {
+      ["middle", "start", "end"].forEach(function (align) {
+        attempts.push({ side: side, width: width, align: align });
+      });
+    });
+  });
 
   for (let i = 0; i < attempts.length; i++) {
     const side = attempts[i].side;
+    const align = attempts[i].align;
     pointer.style.maxWidth = attempts[i].width;
     // The arrow always points from the label towards the target.
     const arrows = { right: "\u2190 ", left: "", top: "", bottom: "\u2191 " };
@@ -676,10 +776,17 @@ function placePointer(target, text, sides) {
 
     let left;
     let top;
-    if (side === "right") { left = goal.right + 8; top = goal.top + goal.height / 2 - height / 2; }
-    if (side === "left") { left = goal.left - 8 - width; top = goal.top + goal.height / 2 - height / 2; }
-    if (side === "top") { left = goal.left + goal.width / 2 - width / 2; top = goal.top - 6 - height; }
-    if (side === "bottom") { left = goal.left + goal.width / 2 - width / 2; top = goal.bottom + 6; }
+    if (side === "right" || side === "left") {
+      left = side === "right" ? goal.right + 8 : goal.left - 8 - width;
+      if (align === "middle") top = goal.top + goal.height / 2 - height / 2;
+      if (align === "start") top = goal.top;
+      if (align === "end") top = goal.bottom - height;
+    } else {
+      top = side === "top" ? goal.top - 4 - height : goal.bottom + 4;
+      if (align === "middle") left = goal.left + goal.width / 2 - width / 2;
+      if (align === "start") left = goal.left;
+      if (align === "end") left = goal.right - width;
+    }
 
     const spot = { left: left, top: top, right: left + width, bottom: top + height };
     const onScreen = spot.left >= 4 && spot.right <= window.innerWidth - 4 && spot.top >= minTop && spot.bottom <= window.innerHeight - 4;
@@ -693,7 +800,9 @@ function placePointer(target, text, sides) {
       return true;
     }
   }
-  pointer.remove();   // nowhere free: leave it out rather than cover something
+  // Nowhere free: rather than cover something, outline the element itself instead.
+  pointer.remove();
+  target.classList.add("pointer-fallback");
   return false;
 }
 
@@ -779,21 +888,31 @@ function setupGuide() {
   document.addEventListener("click", blockNavigationIfLocked, true);
   document.addEventListener("auxclick", blockNavigationIfLocked, true);   // middle-click
 
-  // Back button, refresh or a typed address cannot be stopped with a click listener;
-  // while locked the browser asks "Leave site?" instead of silently ending the tutorial.
-  window.addEventListener("beforeunload", function (event) {
-    if (navigationIsLocked()) {
-      event.preventDefault();
-      event.returnValue = "";
+  // Pick up a tutorial that was running before a refresh or a page change.
+  const saved = loadTutorialState();
+  if (saved && saved.active) {
+    tutorialActive = true;
+    if (onTutorialPage()) {
+      Object.assign(tutorialEvents, saved.events || {});
+      guide.completionShown = Boolean(saved.completionShown);
+      guide.lastStep = Math.min(Math.max(Number(saved.step) || 0, 0), GUIDE_STEPS.length - 1);
+    }
+  }
+  returnToTutorialIfNeeded();
+
+  // Wait for "load" so the page's own script has finished drawing the diagram first.
+  const params = new URLSearchParams(window.location.search);
+  window.addEventListener("load", function () {
+    if (!onTutorialPage()) return;
+    if (tutorialActive) showGuideStep(guide.lastStep);
+    else if (params.get("tutorial") === "1") startGuide();
+    // Sent back here from another page while locked.
+    if (params.get("blocked") === "1" && navigationIsLocked()) showNavigationWarning();
+    // Tidy the address bar, so a later refresh does not start the tutorial again.
+    if (params.has("tutorial") || params.has("blocked")) {
+      window.history.replaceState(null, "", window.location.pathname);
     }
   });
-  // Opened from another page with the tutorial button. Wait for "load" so the
-  // page's own script has finished drawing the diagram first.
-  if (new URLSearchParams(window.location.search).get("tutorial") === "1") {
-    window.addEventListener("load", function () {
-      if ($("#compare-box")) startGuide();
-    });
-  }
 }
 
 document.addEventListener("DOMContentLoaded", setupGuide);

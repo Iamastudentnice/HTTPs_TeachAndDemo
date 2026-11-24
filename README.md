@@ -65,7 +65,10 @@ press `Ctrl + C` in the terminal to stop the app.
   The tutorial box can be dragged by its header, and Hide (or Esc) tucks it away without ending it.
   While the tutorial is running, links to other labs are blocked (the page shakes and a short
   warning appears). Skip tutorial (click twice: it is padlocked) or the Examiner Button ends this.
-  Small green arrows point at what to read or press on each step.
+  Progress is kept for the browser tab: a refresh returns to the same step, and opening another lab
+  by the back button or a typed address leads straight back to the tutorial.
+  Small green arrows point at what to read or press on each step (or, where there is no room for
+  an arrow, the element gets a dashed green outline).
 - **Examiner Button – Remove all restrictions** (amber button on the start page and in the tutorial) –
   unlocks every tutorial step straight away for this browser tab. Press it again to restore the normal
   guided mode. It does not change or skip any simulation.
