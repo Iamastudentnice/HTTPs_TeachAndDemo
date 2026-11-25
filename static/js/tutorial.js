@@ -4,9 +4,7 @@
    The lab pages report real actions with markTutorialEvent(), for example
    "http-done" when an HTTP simulation reaches its last step.
    Nothing here plays or advances a simulation by itself.
-
-   Examiner mode (a button in the tutorial and on the start page) removes the
-   step requirements for this browser tab only. */
+   Skip tutorial is the only way out early, and it removes every restriction. */
 
 "use strict";
 
@@ -20,125 +18,103 @@ const tutorialEvents = {};
      the others are finished when their done() check becomes true. */
 const GUIDE_STEPS = [
   {
-    title: "Your browser visits a website",
-    text: "When you visit a website, your browser (the app you browse with) sends " +
-      "information to the website's server (the computer that runs the website).",
-    needs: ["read-intro", "read-diagram"],
-    target: ".page-header",
+    title: "Meet the connection",
+    text: "Your browser (left) sends your login to the website (right).",
+    needs: ["read-diagram"],
+    target: "#diagram",
     tasks: [
-      { say: "Read the question at the top of the page.", point: ".page-header h1",
-        arrow: "READ THIS", sides: ["right", "bottom"], read: "read-intro" },
-      { say: "Look at the diagram: your browser is on the left, the website on the right.",
-        point: "#diagram .net-row", arrow: "Watch how your message travels.", sides: ["top", "bottom"],
-        read: "read-diagram" },
+      { say: "Look at the diagram.", point: "#diagram .net-row", arrow: "Your message travels this way.",
+        sides: ["top", "bottom"], read: "read-diagram" },
     ],
   },
   {
     title: "Try HTTP",
-    text: "HTTP sends your information without encryption, so it travels as readable text.",
-    needs: ["read-http", "http-done", "read-http-wire"],
+    text: "HTTP sends your login without encryption.",
+    needs: ["http-done", "read-http-wire"],
     target: "#protocol-toggle",
     tasks: [
-      { say: "Read how HTTP sends information.", point: ".plain-terms dd:nth-of-type(1)",
-        arrow: "Read how HTTP sends information.", sides: ["right", "bottom", "top"], read: "read-http" },
-      { say: "Choose HTTP.", point: '#protocol-toggle [data-value="HTTP"]', arrow: "Choose HTTP here.",
+      { say: "Choose HTTP.", point: '#protocol-toggle [data-value="HTTP"]', arrow: "Choose HTTP.",
         sides: ["bottom", "top", "right"],
         done: function () { return protocolIs("HTTP") || did("read-http-wire"); } },
-      { say: "Press Send message.", point: "#player [data-action=start]", arrow: "Press here to send your message.",
+      { say: "Press Send message.", point: "#player [data-action=start]", arrow: "Press Send message.",
         sides: ["top", "right", "bottom"],
         done: function () { return (protocolIs("HTTP") && simulationStarted()) || did("read-http-wire"); } },
-      { say: "Press Next Step until the last step, to follow your message all the way.",
-        point: "#player [data-action=next]", arrow: "Press Next Step to move your message on.",
+      { say: "Press Next Step to the end.", point: "#player [data-action=next]", arrow: "Press Next Step.",
         sides: ["top", "bottom", "right"],
         done: function () { return (did("http-done") && wireShows("plain")) || did("read-http-wire"); } },
-      { say: "Look at \"What your browser sends\": your login left your device as plain, readable text.",
-        point: "#wire-view", spotlight: "#wire-view", arrow: "Look here - your details travelled as readable text.",
-        sides: ["top", "left", "bottom"], read: "read-http-wire" },
+      { say: "Look at what your browser sent.", point: "#wire-view", spotlight: "#wire-view",
+        arrow: "Readable text - anyone on the way can read it.", sides: ["top", "left", "bottom"],
+        read: "read-http-wire" },
     ],
   },
   {
     title: "Look inside a packet",
-    text: "Your message travelled in packets. Opening one shows exactly what anyone on the " +
-      "network could read.",
+    text: "Your login travels in small pieces called packets.",
     needs: ["inspected-plain"],
     target: "#packet-log-box",
     tasks: [
-      { say: "Choose HTTP, so the packets are readable.", point: '#protocol-toggle [data-value="HTTP"]',
-        arrow: "Choose HTTP here.", sides: ["bottom", "top", "right"],
+      { say: "Choose HTTP.", point: '#protocol-toggle [data-value="HTTP"]', arrow: "Choose HTTP.",
+        sides: ["bottom", "top", "right"],
         done: function () { return protocolIs("HTTP") || hasReadablePacket() || did("inspected-plain"); } },
-      { say: "Press Send message, so there are packets to open.", point: "#player [data-action=start]",
-        arrow: "Press here to send your message.", sides: ["top", "right", "bottom"],
+      { say: "Press Send message.", point: "#player [data-action=start]", arrow: "Press Send message.",
+        sides: ["top", "right", "bottom"],
         done: function () { return simulationStarted() || hasReadablePacket() || did("inspected-plain"); } },
       { say: "Press Next Step until a packet appears.", point: "#player [data-action=next]",
-        arrow: "Press Next Step to send a packet.", sides: ["top", "bottom", "right"],
+        arrow: "Press Next Step.", sides: ["top", "bottom", "right"],
         done: function () { return hasReadablePacket() || did("inspected-plain"); } },
-      { say: "Select a blue (readable) packet in the Packets sent list or on the diagram.",
-        point: findReadablePacket, arrow: "Select this packet to inspect it.", sides: ["top", "right", "bottom", "left"],
+      { say: "Open a blue (readable) packet.", point: findReadablePacket, arrow: "Open this packet.",
+        sides: ["top", "right", "bottom", "left"],
         done: function () { return did("inspected-plain"); } },
     ],
   },
   {
     title: "Try HTTPS",
-    text: "HTTPS encrypts your information while it travels. Encryption scrambles it " +
-      "so that only the website can turn it back into readable text.",
-    needs: ["read-https", "https-done", "read-https-wire"],
+    text: "HTTPS scrambles (encrypts) your login before it leaves.",
+    needs: ["https-done", "read-https-wire"],
     target: "#protocol-toggle",
     tasks: [
-      { say: "Read how HTTPS is different.", point: ".plain-terms dd:nth-of-type(2)",
-        arrow: "Now compare this with HTTPS.", sides: ["right", "bottom", "top"], read: "read-https" },
       { say: "Switch to HTTPS.", point: '#protocol-toggle [data-value="HTTPS"]', arrow: "Switch to HTTPS here.",
         sides: ["bottom", "top", "right"],
         done: function () { return protocolIs("HTTPS") || (did("https-done") && did("read-https-wire")); } },
-      { say: "Press Send message.", point: "#player [data-action=start]", arrow: "Press here to send your message.",
+      { say: "Press Send message.", point: "#player [data-action=start]", arrow: "Press Send message.",
         sides: ["top", "right", "bottom"],
         done: function () {
           return (protocolIs("HTTPS") && simulationStarted()) || (did("https-done") && did("read-https-wire"));
         } },
-      { say: "Press Next Step until your browser encrypts the message (step 3).",
-        point: "#player [data-action=next]", arrow: "Press Next Step to move your message on.",
-        sides: ["top", "bottom", "right"],
+      { say: "Press Next Step until it is encrypted.", point: "#player [data-action=next]",
+        arrow: "Press Next Step.", sides: ["top", "bottom", "right"],
         done: function () { return (protocolIs("HTTPS") && wireShows("cipher")) || did("read-https-wire"); } },
-      { say: "Look at \"What your browser sends\": Python has just encrypted your original message. " +
-          "The readable text at the top was turned into the scrambled ciphertext underneath - " +
-          "that is what actually leaves your device.",
-        point: "#wire-view", spotlight: "#wire-view",
+      { say: "Look at the encrypted text.", point: "#wire-view", spotlight: "#wire-view",
         arrow: "Look here - Python has encrypted your original message.", sides: ["top", "left", "bottom"],
         read: "read-https-wire" },
-      { say: "Press Next Step until the last step.", point: "#player [data-action=next]",
-        arrow: "Press Next Step to move your message on.", sides: ["top", "bottom", "right"],
+      { say: "Press Next Step to the end.", point: "#player [data-action=next]", arrow: "Press Next Step.",
+        sides: ["top", "bottom", "right"],
         done: function () { return did("https-done"); } },
     ],
   },
   {
     title: "Compare the results",
-    text: "HTTP sends information without encryption. HTTPS protects it while it travels. " +
-      "With HTTPS, the network can still see which website you visit, but not what you send.",
+    text: "Same login, two very different results.",
     needs: ["http-done", "https-done", "read-compare"],
     target: "#compare-box",
     tasks: [
-      { say: "Fill the HTTP column: choose HTTP, press Send message, then Next Step to the end.",
-        point: "#player [data-action=start]", arrow: "Press here to send your message.", sides: ["top", "right"],
-        done: function () { return did("http-done"); } },
-      { say: "Fill the HTTPS column: choose HTTPS, press Send message, then Next Step to the end.",
-        point: "#player [data-action=start]", arrow: "Press here to send your message.", sides: ["top", "right"],
-        done: function () { return did("https-done"); } },
-      { say: "Compare the two columns: HTTP shows your details, HTTPS only shows where the message went.",
-        point: "#compare-http-note", spotlight: "#compare-box", arrow: "Compare what each one reveals.",
-        sides: ["right", "top"], read: "read-compare" },
+      { say: "Finish an HTTP run.", point: "#player [data-action=start]", arrow: "Press Send message.",
+        sides: ["top", "right"], done: function () { return did("http-done"); } },
+      { say: "Finish an HTTPS run.", point: "#player [data-action=start]", arrow: "Press Send message.",
+        sides: ["top", "right"], done: function () { return did("https-done"); } },
+      { say: "Compare the two columns.", point: "#compare-http-note", spotlight: "#compare-box",
+        arrow: "HTTP shows your login. HTTPS does not.", sides: ["right", "top"], read: "read-compare" },
     ],
   },
   {
-    title: "Try adding an eavesdropper",
-    text: "An eavesdropper is someone on the same Wi-Fi who quietly watches the traffic passing by. " +
-      "Ticking the box adds a simulated one between your browser and the website.",
+    title: "Add an eavesdropper",
+    text: "An eavesdropper quietly watches traffic on the same Wi-Fi.",
     needs: ["observer-on"],
     target: "#observer-option",
-    doneText: "Great! The eavesdropper is now watching the connection. Send a message to see what it " +
-      "can read - or press Finish.",
+    doneText: "Done! Send a message to see what it can read, or press Finish.",
     tasks: [
-      { say: "Tick the box to let someone observe the connection.", point: "#observer-option",
-        arrow: "Tick the box to add an eavesdropper.", sides: ["bottom", "left", "top"],
-        done: function () { return did("observer-on"); } },
+      { say: "Tick the eavesdropper box.", point: "#observer-option", arrow: "Tick this box.",
+        sides: ["bottom", "left", "top"], done: function () { return did("observer-on"); } },
     ],
   },
 ];
@@ -186,12 +162,9 @@ const NAV_WARNING_TEXT = "Tutorial active \u2014 complete or skip the tutorial t
 // Hiding the tutorial box does NOT change this.
 let tutorialActive = false;
 
-// True after the Examiner button is pressed. Remembered for this browser tab only.
-let examinerBypassEnabled = readExaminerSetting();
-
-// The single rule for leaving the page. Examiner bypass always wins.
+// The single rule for leaving the page: locked while the tutorial is running.
 function navigationIsLocked() {
-  return tutorialActive && !examinerBypassEnabled;
+  return tutorialActive;
 }
 
 // The tutorial lives on the HTTP vs HTTPS page (the only page with the comparison box).
@@ -265,9 +238,9 @@ function hasDone(needs) {
   return needs.every(function (name) { return tutorialEvents[name] === true; });
 }
 
-// A step is complete when its actions have happened, or always in examiner mode.
+// A step is complete when its actions have really happened.
 function stepIsComplete(index) {
-  return examinerBypassEnabled || hasDone(GUIDE_STEPS[index].needs);
+  return hasDone(GUIDE_STEPS[index].needs);
 }
 
 // A task is finished when its Got it button was pressed (read tasks) or its check is true.
@@ -294,51 +267,8 @@ function labIsComplete() {
   });
 }
 
-/* ---------- Examiner mode ---------- */
+/* ---------- Short message at the bottom of the screen ---------- */
 
-// Saved in sessionStorage so it lasts for this browser tab only; ordinary users start guided.
-function readExaminerSetting() {
-  try {
-    return window.sessionStorage.getItem("examinerMode") === "on";
-  } catch (error) {
-    return false;   // storage blocked: start guided
-  }
-}
-
-function setExaminerMode(on) {
-  examinerBypassEnabled = on;
-  try {
-    if (on) window.sessionStorage.setItem("examinerMode", "on");
-    else window.sessionStorage.removeItem("examinerMode");
-  } catch (error) {
-    // Storage blocked: the variable above still works for this page.
-  }
-  updateExaminerButtons();
-  guide.taskKey = null;   // redraw the box text for the new mode
-  renderTask();
-  returnToTutorialIfNeeded();
-  showToast(on ? "Examiner mode enabled — tutorial restrictions removed."
-               : "Guided mode restored — each section must be completed again.");
-}
-
-function toggleExaminerMode() {
-  setExaminerMode(!examinerBypassEnabled);
-}
-
-// Every button with data-examiner-toggle shows the current mode.
-function updateExaminerButtons() {
-  const on = examinerBypassEnabled;
-  document.body.classList.toggle("examiner-mode", on);
-  $all("[data-examiner-toggle]").forEach(function (button) {
-    // One button, two lines: "Examiner Button" on top, the action underneath.
-    button.innerHTML = '<span class="examiner-line1">Examiner Button</span>' +
-      '<span class="examiner-line2">' + (on ? "Restore all restrictions" : "Remove all restrictions") + "</span>";
-    button.classList.toggle("is-on", on);
-    button.setAttribute("aria-pressed", on ? "true" : "false");
-  });
-}
-
-// A small message at the top of the screen that fades out after a few seconds.
 let toastTimer = null;
 function showToast(message) {
   let toast = $("#tutorial-toast");
@@ -386,11 +316,17 @@ function startGuide() {
   showGuideStep(0);
 }
 
-// Skip tutorial (after unlocking the padlock): the only normal way to leave early.
+// Finished or skipped: nothing is restricted any more, and every lab is open.
 function endTutorial() {
   tutorialActive = false;
   saveTutorialState();
   closeGuide();
+}
+
+// Skip tutorial (after unlocking the padlock): the only way to leave early.
+function skipTutorial() {
+  endTutorial();
+  showToast("Tutorial skipped. Every lab is open.");
 }
 
 // Hide the box without ending the tutorial. Navigation stays locked.
@@ -445,7 +381,7 @@ function closeGuide() {
   guide.moved = false;
 }
 
-// Create an empty tutorial box with the draggable header and the examiner button.
+// Create an empty tutorial box with the draggable header.
 function buildGuideBox(headerRight, bodyHtml, canHide) {
   const box = document.createElement("div");
   box.className = "guide";
@@ -454,15 +390,11 @@ function buildGuideBox(headerRight, bodyHtml, canHide) {
   box.innerHTML =
     '<div class="guide-count guide-head" title="Drag to move"><span>Learn HTTPS</span><span>' + headerRight +
     (canHide ? '<button class="guide-hide" type="button" data-guide="hide">Hide</button>' : "") + "</span></div>" +
-    '<div class="guide-examiner"><button class="btn btn-sm examiner-toggle" type="button" data-examiner-toggle></button>' +
-    '<span class="examiner-note">Examiner mode on: every section is unlocked.</span></div>' +
     bodyHtml;
   document.body.appendChild(box);
   guide.box = box;
 
-  $("[data-examiner-toggle]", box).addEventListener("click", toggleExaminerMode);
   setupDragging(box);
-  updateExaminerButtons();
   return box;
 }
 
@@ -478,9 +410,7 @@ function showGuideStep(index) {
     '<div class="guide-title">' + escapeHtml(step.title) + "</div>" +
     '<p class="guide-text">' + escapeHtml(step.text) + "</p>" +
     '<div class="guide-task" aria-live="polite"></div>' +
-    '<p class="guide-status"></p>' +
     '<p class="guide-warning" role="alert"></p>' +
-    '<p class="guide-next-hint">Continue when you have completed this action \u2193</p>' +
     '<div class="guide-controls">' +
     (index > 0 ? '<button class="btn btn-sm" data-guide="back">Back</button>' : "") +
     '<button class="btn btn-sm skip" data-guide="skip">' + skipLabel(false) + "</button>" +
@@ -526,7 +456,7 @@ function skipLabel(unlocked) {
 
 function pressSkip(button) {
   if (button.classList.contains("is-unlocked")) {
-    endTutorial();
+    skipTutorial();
     return;
   }
   button.classList.add("is-unlocked");
@@ -563,11 +493,7 @@ function renderTask() {
   const key = task ? step.tasks.indexOf(task) : (complete ? "complete" : "waiting");
 
   // Next is never disabled (an early click shows the warning); it just looks locked.
-  // This is updated first, so the box already has its final size when it is placed.
-  const next = $("[data-guide=next]", guide.box);
-  next.classList.toggle("is-locked", !complete);
-  $(".guide-next-hint", guide.box).hidden = complete;
-  $(".guide-status", guide.box).textContent = complete ? "" : "Not complete yet. Do the task above to unlock " + next.textContent + ".";
+  $("[data-guide=next]", guide.box).classList.toggle("is-locked", !complete);
   if (complete) {
     $(".guide-warning", guide.box).classList.remove("show");
     clearTimeout(guide.warningTimer);
@@ -597,20 +523,19 @@ function renderTask() {
 
 }
 
-// The "What to do" line, with a Got it button for reading tasks.
+// The action line, with a Got it button for reading tasks.
 function showTaskText(step, task, complete, last) {
   const area = $(".guide-task", guide.box);
   if (complete) {
-    const text = examinerBypassEnabled ? "Examiner mode: you can move on freely."
-      : step.doneText || ("\u2713 Section complete. Press " + (last ? "Finish" : "Next") + " to continue.");
+    const text = step.doneText || ("\u2713 Done. Press " + (last ? "Finish" : "Next") + ".");
     area.innerHTML = '<p class="guide-todo is-complete">' + escapeHtml(text) + "</p>";
     return;
   }
   if (!task) {
-    area.innerHTML = '<p class="guide-todo">Keep going with the lab to complete this section.</p>';
+    area.innerHTML = '<p class="guide-todo">Keep going with the lab.</p>';
     return;
   }
-  area.innerHTML = '<p class="guide-todo"><strong>What to do:</strong> ' + escapeHtml(task.say) + "</p>" +
+  area.innerHTML = '<p class="guide-todo">' + escapeHtml(task.say) + "</p>" +
     (task.read ? '<button class="btn btn-sm btn-primary guide-gotit" type="button">Got it</button>' : "");
   if (task.read) {
     $(".guide-gotit", area).addEventListener("click", function () { markTutorialEvent(task.read); });
@@ -690,9 +615,7 @@ function showLabComplete(slug) {
   const box = buildGuideBox("Lab complete",
     '<div class="guide-title">' + escapeHtml(lab.done_title) + "</div>" +
     '<p class="guide-text">' + escapeHtml(lab.done_text) + "</p>" +
-    (next
-      ? '<p class="guide-todo"><strong>Next lab: ' + escapeHtml(next.title) + ".</strong> " + escapeHtml(next.summary) + "</p>"
-      : '<p class="guide-todo">That was the last lab. You can open any lab again from the index on the left.</p>') +
+    (next ? "" : '<p class="guide-todo">That was the last lab. Look up any word in the <a href="/glossary">Glossary</a>.</p>') +
     '<div class="guide-controls guide-complete-controls">' +
     (next ? '<a class="btn btn-sm btn-primary" data-guide="continue" href="' + escapeHtml(next.url) + '">Continue to ' +
       escapeHtml(next.title) + "</a>" : "") +
@@ -929,7 +852,8 @@ function placePointer(target, text, sides, avoidBox) {
   const obstacles = $all(POINTER_OBSTACLES)
     .filter(function (element) {
       if (!avoidBox && element.closest(".guide")) return false;
-      if (element.classList.contains("lesson-hint")) return false;   // blank while the tutorial shows
+      // Page hints are blank while the tutorial shows, so an arrow may sit on them.
+      if (element.classList.contains("lesson-hint") || element.classList.contains("protocol-note")) return false;
       return element !== pointer && isVisible(element) && !element.contains(target) && !target.contains(element);
     })
     .map(obstacleRect);
@@ -1051,11 +975,6 @@ function setupGuide() {
   $all("[data-start-guide]").forEach(function (button) {
     button.addEventListener("click", startGuide);
   });
-  // Examiner buttons outside the tutorial box (e.g. on the start page).
-  $all("[data-examiner-toggle]").forEach(function (button) {
-    button.addEventListener("click", toggleExaminerMode);
-  });
-  updateExaminerButtons();
 
   // Escape hides the tutorial (it does not end it). Leave it alone while a packet window is open.
   // "true" = capture phase: this runs before the packet window's own Escape handler closes it.

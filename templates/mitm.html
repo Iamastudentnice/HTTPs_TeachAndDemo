@@ -4,11 +4,17 @@
 <header class="page-header">
   <div class="eyebrow">Lab 06 · <span class="attack">Featured</span></div>
   <h1>The Attacker Sits in the Middle</h1>
-  <p class="lead">Every packet passes through the attacker. See what HTTPS stops - and what it does not.</p>
+  <p class="lead">Every packet passes through the attacker. What can they do?</p>
 </header>
 
+<!-- Two parts: choose and watch an attack, then see how to stop it (setupLessonParts). -->
+<section class="lesson-part" data-part data-title="Choose an attack and watch it">
+<div class="part-head"><span class="part-num">1</span><div>
+  <h2>Choose an attack and watch it</h2>
+  <p>Pick a scenario, then press Start Simulation.</p>
+</div></div>
+
 <div class="card">
-  <p class="instruction">Choose a scenario, then press Start Simulation below.</p>
   {% set groups = [("Baseline - no attacker", ["normal_http", "normal_https"]),
                    ("Interception", ["http_mitm", "https_mitm"]),
                    ("Impersonation &amp; downgrade", ["cert_spoof", "ssl_strip", "arp"])] %}
@@ -25,12 +31,9 @@
     {% endfor %}
   </div>
 
-  <dl class="mode-key">
-    <dt>Passive</dt><dd>Watches and copies traffic. Encryption defeats it.</dd>
-    <dt>Active</dt><dd>Modifies, injects or impersonates. Certificate checks and HSTS defeat it.</dd>
-  </dl>
-
-  <div class="option-panel" style="margin-top:14px">
+  <details class="more options-more">
+  <summary>Change the message or the attack (optional)</summary>
+  <div class="more-body option-panel">
     <div id="message-group" style="flex:1;min-width:240px">
       <label class="field" for="message">Victim's message
         <button class="btn btn-sm" data-preset="login" style="margin-left:6px">Login</button>
@@ -70,6 +73,7 @@
       </select>
     </div>
   </div>
+  </details>
 </div>
 
 <section class="section card sim-card">
@@ -84,7 +88,8 @@
   </div>
   <div id="player"></div>
 
-  <div class="sim-panels">
+  <!-- Shown once the simulation starts. -->
+  <div class="sim-panels" id="mitm-panels" hidden>
     <div id="outcome"></div>
 
     <!-- HTTP/HTTPS scenario panels: left / middle / right, like the diagram -->
@@ -146,16 +151,23 @@
   </div>
 </section>
 
-<section class="section">
+</section>
+
+<section class="lesson-part" data-part data-title="How to stop it">
+  <div class="part-head"><span class="part-num">2</span><div>
+    <h2>How to stop it</h2>
+    <p>Each attack has a defence. Here is the one for this scenario.</p>
+  </div></div>
+  <div class="callout good" id="note-defence"></div>
   <details class="more">
     <summary>Packet log for this run - select a packet to inspect it</summary>
     <div class="more-body"><ul class="packet-log" id="packet-log"></ul></div>
   </details>
   <details class="more">
-    <summary>Technical details: attack goal and defence</summary>
+    <summary>Learn more: passive and active attackers</summary>
     <div class="more-body">
-      <div class="output-label">Attack goal</div><p id="note-goal"></p>
-      <div class="output-label">Defence</div><p id="note-defence"></p>
+      <p><strong>Passive</strong> attackers watch and copy traffic. Encryption defeats them.</p>
+      <p><strong>Active</strong> attackers change, inject or impersonate. Certificate checks and HSTS defeat them.</p>
     </div>
   </details>
   <details class="more">

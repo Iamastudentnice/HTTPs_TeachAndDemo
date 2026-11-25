@@ -80,6 +80,7 @@
         </div>
         {% endif %}
       {% endfor %}
+      <a href="{{ url_for('glossary_page') }}" class="{{ 'active' if active == 'glossary' }} glossary-link"><span class="num">A–Z</span><span>Glossary</span><span></span></a>
       <a href="{{ url_for('index') }}" class="{{ 'active' if active == 'home' }} all-labs"><span class="num">··</span><span>All labs overview</span><span></span></a>
     </nav>
     <div class="sidebar-foot">

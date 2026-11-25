@@ -4,7 +4,7 @@
 <header class="page-header">
   <div class="eyebrow">Lab 03 · TLS 1.3 handshake</div>
   <h1>Agree Keys Before Sending Data</h1>
-  <p class="lead">Seven stages, one round trip. Every key is generated live by Python.</p>
+  <p class="lead">Watch your browser and a website agree a secret key, one step at a time.</p>
 </header>
 
 <section class="card sim-card">
@@ -16,18 +16,19 @@
   </div>
   <div id="player"></div>
 
-  <div class="sim-panels" id="stage-card">
+  <!-- Appears once the handshake starts: what this step sends, and why. -->
+  <div class="sim-panels" id="stage-card" hidden>
   <div class="grid grid-2">
     <div>
-      <div class="output-label" style="margin-top:0">Who is communicating</div>
-      <p id="stage-who" class="muted">Start the handshake to see each stage.</p>
-      <div class="output-label">What is exchanged</div>
+      <div class="output-label" style="margin-top:0">Who → who</div>
+      <p id="stage-who" class="muted">-</p>
+      <div class="output-label">What is sent (real values from Python)</div>
       <pre class="output empty" id="stage-exchanged">-</pre>
     </div>
     <div>
-      <div class="output-label" style="margin-top:0">Why this stage is necessary</div>
+      <div class="output-label" style="margin-top:0">Why it is needed</div>
       <p id="stage-why" class="muted">-</p>
-      <div class="output-label">Security purpose</div>
+      <div class="output-label">What it protects</div>
       <div class="callout good" id="stage-purpose">-</div>
       <ul class="small muted" id="stage-extra"></ul>
     </div>
@@ -35,45 +36,44 @@
   </div>
 </section>
 
-<section class="section grid grid-2">
-  <div class="card">
-    <h3>Both sides compute the same secret</h3>
-    <div class="flow">
-      <div class="flow-box plain"><strong>Client</strong>private a · public A</div>
-      <span class="flow-arrow">⇄</span>
-      <div class="flow-box key"><strong>Only A and B travel</strong>public values</div>
-      <span class="flow-arrow">⇄</span>
-      <div class="flow-box plain"><strong>Server</strong>private b · public B</div>
+<section class="section">
+  <details class="more">
+    <summary>Learn more: how both sides get the same secret (step 5)</summary>
+    <div class="more-body">
+      <div class="flow">
+        <div class="flow-box plain"><strong>Client</strong>private a · public A</div>
+        <span class="flow-arrow">⇄</span>
+        <div class="flow-box key"><strong>Only A and B travel</strong>public values</div>
+        <span class="flow-arrow">⇄</span>
+        <div class="flow-box plain"><strong>Server</strong>private b · public B</div>
+      </div>
+      <div class="flow">
+        <div class="flow-box cipher"><strong>Client computes</strong>X25519(a, B)</div>
+        <span class="flow-arrow">=</span>
+        <div class="flow-box cipher"><strong>Server computes</strong>X25519(b, A)</div>
+      </div>
+      <p><strong>Analogy: mixing paint.</strong> Both start with the same public base colour. Each mixes in a secret
+        colour and swaps the mixture. Adding their own secret again gives both the same final colour - but an
+        observer who saw only the mixtures cannot un-mix them.</p>
     </div>
-    <div class="flow">
-      <div class="flow-box cipher"><strong>Client computes</strong>X25519(a, B)</div>
-      <span class="flow-arrow">=</span>
-      <div class="flow-box cipher"><strong>Server computes</strong>X25519(b, A)</div>
-    </div>
-    <details class="more"><summary>Analogy: mixing paint</summary>
-      <div class="more-body">Both start with the same public base colour. Each mixes in a secret colour and swaps
-        the mixture. Adding their own secret again gives both the same final colour - but an observer who saw
-        only the mixtures cannot un-mix them.</div>
-    </details>
-  </div>
-  <div class="card">
-    <h3>Certificates authenticate - they don't encrypt your data</h3>
-    <p class="small muted">The certificate proves identity. Session keys encrypt the data.</p>
-    <details class="more"><summary>Technical details: CertificateVerify</summary>
-      <div class="more-body">The certificate binds <code>shop.example.com</code> to a public key. In <em>CertificateVerify</em>
+  </details>
+  <details class="more">
+    <summary>Learn more: certificates prove identity, they don't encrypt</summary>
+    <div class="more-body">
+      <p>The certificate binds <code>shop.example.com</code> to a public key. In <em>CertificateVerify</em>
         the server signs the handshake with the matching private key, proving it is genuine. Your page data is
-        encrypted with the symmetric session keys from the key exchange.</div>
-    </details>
-    <details class="more"><summary>Why "ephemeral" matters (forward secrecy)</summary>
-      <div class="more-body">The DH keys are thrown away after the session. Even if the server's long-term private
-        key is stolen later, recorded traffic cannot be decrypted.</div>
-    </details>
-    <details class="more"><summary>What this demo simplifies</summary>
-      <div class="more-body">Real TLS 1.3 derives keys through a longer HKDF key schedule that mixes in a hash of
-        every handshake message; here one HKDF step per key is shown. Key shares really are sent in ClientHello
-        and ServerHello - the "Key Exchange" stage shows the local computation.</div>
-    </details>
-  </div>
+        encrypted with the symmetric session keys from the key exchange.</p>
+    </div>
+  </details>
+  <details class="more"><summary>Technical details: forward secrecy</summary>
+    <div class="more-body">The DH keys are thrown away after the session. Even if the server's long-term private
+      key is stolen later, recorded traffic cannot be decrypted.</div>
+  </details>
+  <details class="more"><summary>Technical details: what this demo simplifies</summary>
+    <div class="more-body">Real TLS 1.3 derives keys through a longer HKDF key schedule that mixes in a hash of
+      every handshake message; here one HKDF step per key is shown. Key shares really are sent in ClientHello
+      and ServerHello - the "Key Exchange" stage shows the local computation.</div>
+  </details>
 </section>
 {% endblock %}
 
@@ -87,8 +87,9 @@ document.addEventListener("DOMContentLoaded", function () {
     { id: "server", label: "Web Server", sublabel: "shop.example.com", icon: "server", role: "server" },
   ]);
 
-  // Fill in the who/what/why/purpose panel for a stage.
+  // Fill in the who/what/why/purpose panel for a stage (it stays hidden until the first step).
   function showStage(panels) {
+    $("#stage-card").hidden = !panels.who;
     $("#stage-who").textContent = panels.who || "-";
     const exchanged = $("#stage-exchanged");
     exchanged.className = "output plain";
@@ -105,12 +106,12 @@ document.addEventListener("DOMContentLoaded", function () {
     mount: $("#player"),
     startLabel: "Start handshake",
     introTitle: "Press Start handshake",
-    introText: "Use Next Step to go at your own pace.",
+    introText: "Each step shows who sends what, and why.",
     loadSteps: function () { return apiPost("/api/tls/handshake", {}); },
     onStep: function (step) { showStage(step.panels); },
     onFinish: function () { recordProgress("tls_handshake", "handshake"); },
     onReset: function () {
-      showStage({ who: "Start the handshake to see each stage." });
+      showStage({});
       $("#stage-exchanged").className = "output empty";
       $("#stage-exchanged").textContent = "-";
     },

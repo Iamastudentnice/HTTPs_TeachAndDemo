@@ -25,22 +25,20 @@ SCENARIOS = {
 
 # One-line summaries shown under the scenario buttons (kept short on purpose).
 SCENARIO_NOTES = {
-    "normal_http": {"goal": "Baseline: HTTP through an honest router. It works - but only because nobody is listening.",
-                    "defence": "Nothing protects HTTP traffic. Any device on the path could read or change it."},
-    "normal_https": {"goal": "Baseline: HTTPS through an honest router. The router forwards ciphertext.",
-                     "defence": "TLS gives confidentiality, integrity and server authentication end to end."},
-    "http_mitm": {"goal": "The attacker reads the plaintext login and can rewrite it before the server sees it.",
-                  "defence": "Use HTTPS. HTTP has no encryption and no integrity check."},
-    "https_mitm": {"goal": "Same attacker position, but TLS is in use. Passive interception yields only ciphertext; tampering is detected.",
-                   "defence": "TLS stops passive reading and modification. Active interception still works if a user "
-                              "clicks through a certificate warning or a malicious root CA is installed (see C)."},
-    "cert_spoof": {"goal": "The attacker impersonates the server with its own certificate. Will the browser accept it?",
-                   "defence": "Certificate validation (name, dates, signature, trusted root). Never click through warnings; "
-                              "protect the device's trust store."},
-    "ssl_strip": {"goal": "The attacker keeps the victim on HTTP while it talks HTTPS to the real server.",
-                  "defence": "HSTS (preloaded), HTTPS-Only Mode, and always using https:// links and bookmarks."},
-    "arp": {"goal": "On a local network the attacker lies in ARP replies so traffic is delivered to its MAC address.",
-            "defence": "Dynamic ARP Inspection, static ARP entries, port security, and end-to-end encryption (TLS/VPN)."},
+    "normal_http": {"goal": "No attacker: HTTP works, but only because nobody is listening.",
+                    "defence": "Nothing protects HTTP. Any device on the path could read or change it."},
+    "normal_https": {"goal": "No attacker: the router only ever forwards ciphertext.",
+                     "defence": "TLS keeps the data private, unchanged and sent to the real server."},
+    "http_mitm": {"goal": "The attacker reads the login, and can change it.",
+                  "defence": "Use HTTPS. HTTP has no encryption and no tamper check."},
+    "https_mitm": {"goal": "Same attacker, but with HTTPS: they only see scrambled data.",
+                   "defence": "TLS stops reading and changing. Never click through a certificate warning (see C)."},
+    "cert_spoof": {"goal": "The attacker pretends to be the website. Will the browser accept it?",
+                   "defence": "Certificate checks. Never click through warnings."},
+    "ssl_strip": {"goal": "The attacker keeps the victim on HTTP, without a padlock.",
+                  "defence": "HSTS, HTTPS-Only Mode, and https:// bookmarks."},
+    "arp": {"goal": "On a home network, the attacker tricks devices into sending it their traffic.",
+            "defence": "Switch ARP checks, static entries, and HTTPS or a VPN."},
 }
 
 CERT_PROBLEMS = {
@@ -102,8 +100,7 @@ def normal_http(message):
                   highlight={VICTIM: "warning"},
                   panels={"address": "http://" + SITE + "/login", "secure": False, "victim_sent": message}),
         make_step("2. Packet reaches the router",
-                  "The honest router just forwards it. It COULD read it - HTTP relies on every "
-                  "device on the path being trustworthy.",
+                  "The honest router forwards it. It could read it - HTTP just trusts every device.",
                   packet=make_packet(VICTIM, ATTACKER, "plain", "POST /login", info, request)),
         make_step("3. Server receives the request",
                   "The message arrives unchanged, by luck rather than by protection.",
@@ -156,8 +153,7 @@ def http_mitm(message, attacker_modifies, find_text, replace_text):
                   highlight={VICTIM: "warning"},
                   panels={"address": "http://" + SITE + "/login", "secure": False, "victim_sent": message}),
         make_step("2. Traffic flows into the attacker",
-                  "The attacker sits on the path (e.g. via ARP spoofing or a rogue Wi-Fi hotspot). "
-                  "Every packet now passes through them.",
+                  "The attacker sits on the path, e.g. a fake Wi-Fi hotspot. Every packet passes them.",
                   packet=make_packet(VICTIM, ATTACKER, "malicious", "POST /login (plaintext)",
                                      details("HTTP", VICTIM_IP + ":51544", SERVER_IP + ":80", "No",
                                              {"Intercepted": "Yes - by " + ATTACKER_IP}), request),
@@ -171,8 +167,7 @@ def http_mitm(message, attacker_modifies, find_text, replace_text):
     if attacker_modifies and was_changed:
         steps.append(make_step(
             "4. Attacker modifies the message",
-            "The attacker replaces '" + find_text + "' with '" + replace_text + "'. HTTP has no "
-            "integrity protection, so nothing will detect this.",
+            "The attacker swaps '" + find_text + "' for '" + replace_text + "'. HTTP cannot detect this.",
             highlight={ATTACKER: "danger"},
             panels={"original": message, "modified": modified_message, "was_modified": True}))
     elif attacker_modifies:
@@ -221,9 +216,7 @@ def https_mitm(message, attacker_modifies):
 
     steps = [
         make_step("1. TLS handshake passes through the attacker",
-                  "The attacker relays the handshake but cannot change it: the server's certificate "
-                  "and signature prove its identity, and Diffie-Hellman means the session key is "
-                  "never sent.",
+                  "The attacker passes the handshake on but cannot change it. The key is never sent.",
                   packet=make_packet(VICTIM, SERVER, "encrypted", "TLS handshake (relayed)",
                                      details("TLS 1.3", VICTIM_IP, SERVER_IP, "Key exchange")),
                   highlight={VICTIM: "secure", SERVER: "secure"},
@@ -233,14 +226,12 @@ def https_mitm(message, attacker_modifies):
                   highlight={VICTIM: "secure"},
                   panels={"wire": record["combined_hex"]}),
         make_step("3. Attacker captures the packet",
-                  "The packet still flows through the attacker - interception is possible - but "
-                  "the payload is ciphertext.",
+                  "The packet still passes the attacker, but its content is ciphertext.",
                   packet=make_packet(VICTIM, ATTACKER, "encrypted", "Application Data (captured)",
                                      info, record["combined_hex"]),
                   highlight={ATTACKER: "warning"}),
         make_step("4. Attacker cannot read the content",
-                  "Without the session key the attacker sees only metadata: IP addresses, port "
-                  "443, the server name (SNI), packet sizes and timing.",
+                  "Without the key they see only metadata: addresses, the site name, size and timing.",
                   highlight={ATTACKER: "warning"},
                   panels={"attacker_saw": "Source: " + VICTIM_IP + ":51544\nDestination: " + SERVER_IP
                           + ":443\nSNI: " + SITE + "\nLength: " + str(record["ciphertext_length"])
@@ -262,8 +253,7 @@ def https_mitm(message, attacker_modifies):
             panels={"original": record["combined_hex"], "modified": tampered, "was_modified": True}))
         steps.append(make_step(
             "6. Server detects the tampering",
-            "AES-GCM authentication fails, so the server rejects the record, sends a "
-            "'bad_record_mac' alert and closes the connection. Real result: "
+            "The check fails, so the server rejects it and closes the connection. Real result: "
             + ("decryption FAILED" if not result["success"] else "decrypted"),
             highlight={SERVER: "danger"},
             panels={"server_received": "REJECTED - " + result.get("error", ""),
@@ -285,9 +275,7 @@ def https_mitm(message, attacker_modifies):
 
     steps.append(make_step(
         "7. Important limitation",
-        "TLS defeats ordinary interception, but an ACTIVE attacker can still succeed if the user "
-        "clicks through a certificate warning, or if a malicious root CA is installed on the "
-        "victim's device. Try Scenario C to see both.",
+        "An attacker can still win if you click through a certificate warning. Try Scenario C.",
         highlight={ATTACKER: "warning"}))
     return steps
 
@@ -326,8 +314,7 @@ def cert_spoof(message, cert_problem):
                                      details("TLS 1.3", ATTACKER_IP, SERVER_IP + ":443", "Yes")),
                   highlight={ATTACKER: "danger"}),
         make_step("3. Attacker presents a fake certificate",
-                  "The attacker cannot use the real certificate because it does not have the "
-                  "server's private key, so it sends one it made itself: "
+                  "It lacks the real server's private key, so it sends its own: "
                   + CERT_PROBLEMS[cert_problem] + ".",
                   packet=make_packet(ATTACKER, VICTIM, "warning", "Fake certificate",
                                      {"Subject": fake_cert["subject_cn"], "Issuer": fake_cert["issuer_cn"],
@@ -375,8 +362,7 @@ def intercepted_tls_steps(request, message, padlock_shown):
     attacker_key_record = encryption.symmetric_encrypt(request)
     server_record = encryption.symmetric_encrypt(request)
     if padlock_shown:
-        intro = ("No warning appears and the padlock is shown, because the victim's device "
-                 "trusts the attacker's CA. HTTPS cannot protect a compromised endpoint.")
+        intro = ("No warning and a padlock: the device trusts the attacker's CA.")
     else:
         intro = ("The user clicked through the warning. Sites using HSTS do not even offer "
                  "this option, precisely to prevent this mistake.")
@@ -419,8 +405,7 @@ def ssl_strip(message, protection):
                      '(Strict-Transport-Security header removed)')
     return [
         make_step("1. Victim types '" + SITE + "' without https://",
-                  "With no HSTS record, the browser's first request may go out over plain HTTP. "
-                  "The attacker intercepts it.",
+                  "Without HSTS, the first request may go out over plain HTTP. The attacker catches it.",
                   packet=make_packet(VICTIM, ATTACKER, "malicious", "GET http://" + SITE,
                                      details("HTTP", VICTIM_IP, SERVER_IP + ":80", "No")),
                   highlight={ATTACKER: "danger"},
@@ -437,16 +422,14 @@ def ssl_strip(message, protection):
                                      details("HTTPS", SERVER_IP + ":443", ATTACKER_IP, "Yes")),
                   panels={"original": original_html}),
         make_step("4. Attacker strips HTTPS from the page",
-                  "Every https:// link becomes http:// and the HSTS header is deleted, then the "
-                  "page is sent to the victim over plain HTTP.",
+                  "Every https:// link becomes http://, and the page goes to the victim over HTTP.",
                   packet=make_packet(ATTACKER, VICTIM, "malicious", "200 OK (stripped, HTTP)",
                                      details("HTTP", SERVER_IP + ":80 (spoofed)", VICTIM_IP, "No"),
                                      stripped_html),
                   highlight={ATTACKER: "danger", VICTIM: "warning"},
                   panels={"original": original_html, "modified": stripped_html, "was_modified": True}),
         make_step("5. Victim logs in over HTTP",
-                  "The page looks normal; only the missing padlock and 'Not secure' label give it "
-                  "away. The login goes out as plain text.",
+                  "The page looks normal - only the missing padlock gives it away. The login is plain text.",
                   packet=make_packet(VICTIM, ATTACKER, "malicious", "POST /login (plaintext)",
                                      details("HTTP", VICTIM_IP, SERVER_IP + ":80", "No"), request),
                   highlight={VICTIM: "danger"}),
@@ -464,12 +447,10 @@ def ssl_strip(message, protection):
 def strip_blocked(message, defence):
     """Steps showing HSTS or HTTPS-Only Mode defeating a stripping attempt."""
     if defence == "HSTS":
-        upgrade_reason = ("The browser remembers (or has preloaded) the site's HSTS policy "
-                          "'Strict-Transport-Security: max-age=31536000; includeSubDomains', so it "
-                          "upgrades to https:// internally BEFORE sending anything.")
+        upgrade_reason = ("The browser knows this site's HSTS rule, so it switches to https:// "
+                          "before sending anything.")
     else:
-        upgrade_reason = ("HTTPS-Only Mode makes the browser try https:// for every site. It "
-                          "only falls back to HTTP after showing the user a clear warning.")
+        upgrade_reason = ("HTTPS-Only Mode tries https:// first, and warns before ever using HTTP.")
 
     return [
         make_step("1. Victim types '" + SITE + "' without https://",
@@ -482,16 +463,13 @@ def strip_blocked(message, defence):
                                      details("TLS 1.3", VICTIM_IP, SERVER_IP + ":443", "Handshake")),
                   highlight={ATTACKER: "warning"}),
         make_step("3. Attacker's options all fail",
-                  "Answering with HTTP is refused, and presenting a fake certificate fails "
-                  "validation. With " + defence + ", the browser does not let the user click "
-                  "through the error.",
+                  "HTTP is refused and a fake certificate fails. With " + defence + ", there is no "
+                  "click-through.",
                   packet=make_packet(ATTACKER, VICTIM, "warning", "Downgrade attempt",
                                      details("HTTP / fake cert", ATTACKER_IP, VICTIM_IP, "No")),
                   highlight={ATTACKER: "warning", VICTIM: "secure"}),
         make_step("4. Attack blocked",
-                  "The browser shows a hard error instead of a downgraded page. No credentials "
-                  "are sent. Defences: HSTS (with preload for the very first visit), HTTPS-Only "
-                  "Mode, and typing or bookmarking https:// addresses.",
+                  "The browser shows an error instead. No password is sent.",
                   highlight={VICTIM: "secure", ATTACKER: "inactive"},
                   panels={"outcome": "safe"}),
     ]

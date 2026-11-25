@@ -100,8 +100,7 @@ def stage_read_address(address):
     return make_stage(
         "Your browser reads the address",
         "URL parsing",
-        "When you type a website address, your browser works out which website you want to visit "
-        "and which protocol to use.",
+        "Your browser works out which website you want, and how to talk to it.",
         ["A protocol is a set of rules for how two computers talk to each other."],
         ["A full website address is called a URL (Uniform Resource Locator).",
          "Many browsers now try HTTPS first when you leave out the protocol. This demo uses "
@@ -122,8 +121,7 @@ def stage_check_cache(address):
     return make_stage(
         "Checking what's already saved",
         "Browser and DNS caching",
-        "Before looking everything up again, your browser and device may already have some of "
-        "the information saved.",
+        "Your browser checks whether it already saved what it needs.",
         ["Caching means temporarily saving information so it can be reused.",
          "Cache hit: the information is already saved, so time is saved.",
          "Cache miss: it is not saved (or too old), so it has to be fetched again."],
@@ -160,7 +158,7 @@ def stage_dns(address):
     return make_stage(
         "Finding the website",
         "DNS lookup",
-        "Computers use IP addresses to find each other. DNS helps turn a website name into an IP address.",
+        "Computers find each other by number, so the name must be looked up.",
         ["An IP address is a number that identifies a computer on the internet, like " + address["ip"] + ".",
          "DNS (Domain Name System) works like a phonebook: look up a name, get a number."],
         ["A DNS resolver is usually run by your internet provider or a public service. If it does not "
@@ -199,7 +197,7 @@ def stage_routing(address):
     return make_stage(
         "Finding the way out",
         "Local network and routing",
-        "Your device needs to know where to send the information so it can travel towards the website.",
+        "Your device works out where to send the data first.",
         ["A router connects your home network to the internet and passes traffic between them.",
          "The default gateway is the router your device uses for anything outside your home network.",
          "A MAC address is a hardware address used to deliver data on the local network."],
@@ -208,8 +206,8 @@ def stage_routing(address):
          "IPv6 networks do not use ARP. They use a different mechanism called Neighbor Discovery.",
          "Out on the internet, many routers pass the packet along, each choosing the next hop."],
         [
-            make_part("On an IPv4 network, if the router's hardware address is not already saved, your device "
-                      "asks the local network: who has " + ROUTER_IP + " (the default gateway)?",
+            make_part("If it does not know the router's MAC address yet, your device asks the network: "
+                      "who has " + ROUTER_IP + " (the router)?",
                       packet=arp_question, highlight={"device": "active"}),
             make_part("The router answers with its MAC address, so your device knows where to hand over data.",
                       packet=arp_answer, highlight={"router": "active"}),
@@ -235,7 +233,7 @@ def stage_tcp(address):
     return make_stage(
         "Establishing a connection",
         "TCP three-way handshake",
-        "Before sending information, your browser and the server may need to establish a connection.",
+        "Before sending data, your browser and the server may open a connection.",
         ["TCP (Transmission Control Protocol) makes sure data arrives complete and in the right order.",
          "This connection is used by HTTP/1.1 and HTTP/2."],
         ["Not every HTTPS connection uses TCP: HTTP/3 uses QUIC instead, which sets up the connection "
@@ -260,7 +258,7 @@ def stage_tls(address):
         make_node("client", "Your Browser", DEVICE_IP, "laptop", "client"),
         make_node("server", "Web Server", address["domain"], "server", "server"),
     ]
-    explanation = "HTTPS uses TLS to help protect information travelling between your browser and the website."
+    explanation = "HTTPS uses TLS to protect the data on its way."
 
     if address["scheme"] == "http":
         return make_stage(
@@ -290,7 +288,7 @@ def stage_tls(address):
         "Securing the connection",
         "TLS handshake",
         explanation,
-        ["TLS (Transport Layer Security) is the technology that protects HTTPS connections.",
+        ["TLS stands for Transport Layer Security.",
          "The certificate proves the server's identity. The shared keys do the encrypting."],
         ["This is a simplified TLS 1.3 handshake. The key exchange travels inside the two Hello messages, "
          "and the certificate is already encrypted when it is sent.",
@@ -298,18 +296,17 @@ def stage_tls(address):
          "real " + address["domain"] + ". The shared encryption keys protect the data that follows.",
          "Lab 03 shows the full handshake with real keys. Lab 05 lets you break each certificate check."],
         [
-            make_part("Client Hello: your browser says hello, lists the security methods it supports and sends "
+            make_part("Client Hello: your browser lists the security methods it supports and sends "
                       "its half of a key exchange.", packet=hello, highlight={"client": "active"}),
-            make_part("Server Hello: the server picks the methods to use and sends its half of the key exchange.",
+            make_part("Server Hello: the server picks the methods and sends its half of the key exchange.",
                       packet=server_hello, highlight={"server": "active"}),
-            make_part("Key agreement: from the two halves, the browser and the server each work out the same "
-                      "secret keys - without the keys ever being sent.",
+            make_part("Key agreement: both sides work out the same secret keys. The keys are never sent.",
                       highlight={"client": "active", "server": "active"}),
-            make_part("Certificate verification: the server sends its certificate (an ID card for the website). "
-                      "Your browser checks it is trusted, in date and really for " + address["domain"] + ".",
+            make_part("Certificate check: your browser checks the website's ID card is trusted, in date "
+                      "and really for " + address["domain"] + ".",
                       packet=certificate, highlight={"client": "secure"}),
-            make_part("Secure connection established: both sides confirm, and from now on the website's data is "
-                      "encrypted with the shared keys.", packet=finished,
+            make_part("Secure connection: from now on, the website's data is encrypted with the shared keys.",
+                      packet=finished,
                       highlight={"client": "secure", "server": "secure"}),
         ],
         nodes=nodes,
@@ -350,11 +347,11 @@ def stage_request(address):
     return make_stage(
         "Sending and receiving information",
         "HTTP request and response",
-        "Your browser can now ask the website for information, and the server can send it back.",
+        "Your browser asks for the page, and the server sends it back.",
         ["A request asks the server for something - here, the page at " + address["path"] + ".",
          "A response contains the result: a status, such as 200 OK, and the page itself.",
-         ("HTTPS protects this exchange using TLS." if secure
-          else "With HTTP, nothing protects this exchange: anyone on the path could read or change it.")],
+         ("With HTTPS, only the two ends can read it." if secure
+          else "With HTTP, anyone on the path could read or change it.")],
         ["Common status codes: 200 OK (success), 301 (moved somewhere else), 404 (not found).",
          "A real page usually needs many requests: one for the HTML, then more for styles, scripts and pictures.",
          "The page content here is made up for the demo."],

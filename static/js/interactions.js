@@ -466,6 +466,7 @@ class NetworkDiagram {
     this.removePacket();
     const route = this.colourPath(packet);
     if (!route.path.length) return Promise.resolve();
+    this.container.classList.add("has-packet");   // shows "Select a packet to inspect it."
 
     const element = document.createElement("button");
     element.type = "button";
@@ -566,6 +567,7 @@ class NetworkDiagram {
   /* Back to grey lines, no highlights, no packet. */
   resetVisuals() {
     this.removePacket();
+    this.container.classList.remove("has-packet");
     this.showCaption(null);
     this.setHighlights({});
     this.links.forEach(function (link) {
@@ -929,8 +931,51 @@ function setupProgressReset() {
   });
 }
 
+/* Lesson parts: a lab page shown one part at a time, like the stages of Lab 02.
+   Each part has data-part and a data-title. A Next button under the last part on
+   screen reveals the next one; "Show all" reveals the rest at once. */
+function setupLessonParts() {
+  const parts = $all("[data-part]");
+  if (parts.length < 2) return;
+  const storageKey = "lessonParts:" + window.location.pathname;   // remembered for this tab
+  let shown = 1;
+  try {
+    shown = Number(window.sessionStorage.getItem(storageKey)) || 1;
+  } catch (error) {
+    // Storage blocked: start at part 1.
+  }
+
+  const bar = document.createElement("div");
+  bar.className = "part-next";
+  bar.innerHTML = '<button class="btn btn-primary" type="button" data-part-next></button>' +
+    '<button class="link-btn" type="button" data-part-all>Show all</button>' +
+    '<span class="part-count"></span>';
+
+  function showParts(count, scroll) {
+    shown = Math.min(Math.max(count, 1), parts.length);
+    parts.forEach(function (part, index) { part.hidden = index >= shown; });
+    try {
+      window.sessionStorage.setItem(storageKey, String(shown));
+    } catch (error) {
+      // Storage blocked: nothing to remember.
+    }
+    bar.hidden = shown === parts.length;
+    if (!bar.hidden) {
+      parts[shown - 1].after(bar);
+      $("[data-part-next]", bar).textContent = "Next: " + parts[shown].dataset.title;
+      $(".part-count", bar).textContent = "Part " + shown + " of " + parts.length;
+    }
+    if (scroll) parts[shown - 1].scrollIntoView({ block: "start", behavior: "smooth" });
+  }
+
+  $("[data-part-next]", bar).addEventListener("click", function () { showParts(shown + 1, true); });
+  $("[data-part-all]", bar).addEventListener("click", function () { showParts(parts.length, false); });
+  showParts(shown, false);
+}
+
 document.addEventListener("DOMContentLoaded", function () {
   setupSidebar();
   setupModal();
   setupProgressReset();
+  setupLessonParts();
 });
