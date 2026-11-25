@@ -133,14 +133,20 @@ document.addEventListener("DOMContentLoaded", function () {
     logElement: $("#packet-log"),
     startLabel: "Start Simulation",
     introTitle: "Press Start Simulation",
-    introText: "Victim on the left, server on the right, attacker in the middle.",
+    introText: "Then use Next Step to go at your own pace.",
     loadSteps: function () { clearPanels(); return request(); },
-    onStep: function (step, index, panels) { renderPanels(panels); },
+    onStep: function (step, index, panels) {
+      $("#mitm-panels").hidden = false;
+      renderPanels(panels);
+    },
     onFinish: function () {
       const scenario = getScenario();
       if (scenario !== "normal_http" && scenario !== "normal_https") recordProgress("mitm", scenario);
     },
-    onReset: clearPanels,
+    onReset: function () {
+      $("#mitm-panels").hidden = true;
+      clearPanels();
+    },
   });
 
   /* ---------------- Scenario switching ---------------- */
@@ -155,7 +161,6 @@ document.addEventListener("DOMContentLoaded", function () {
     $("#arp-panels").classList.toggle("hidden", scenario !== "arp");
     const notes = SCENARIO_NOTES[scenario] || {};
     $("#scenario-goal").textContent = notes.goal || "";
-    $("#note-goal").textContent = notes.goal || "";
     $("#note-defence").textContent = notes.defence || "";
     // Show the right devices straight away (nothing plays until Start).
     const data = await request();

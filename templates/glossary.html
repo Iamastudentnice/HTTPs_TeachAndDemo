@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Glossary{% endblock %}
+{% block content %}
+<header class="page-header">
+  <div class="eyebrow">Glossary · A–Z</div>
+  <h1>Key Words, Explained Simply</h1>
+  <p class="lead">One line for each word used in the labs.</p>
+</header>
+
+<div class="glossary-tools">
+  <label class="field" for="glossary-search">Find a word</label>
+  <input type="search" id="glossary-search" placeholder="e.g. TLS" autocomplete="off">
+  <nav class="glossary-letters" aria-label="Jump to a letter">
+    {% for letter, entries in groups %}<a href="#letter-{{ letter }}">{{ letter }}</a>{% endfor %}
+  </nav>
+</div>
+
+<div class="glossary">
+  {% for letter, entries in groups %}
+  <section class="glossary-group" id="letter-{{ letter }}">
+    <h2 class="glossary-letter">{{ letter }}</h2>
+    <dl>
+      {% for entry in entries %}
+      <div class="glossary-entry">
+        <dt>{{ entry.term }}</dt>
+        <dd>{{ entry.meaning }}
+          {% set lab = labs[entry.lab] %}
+          <a class="glossary-lab" href="{{ url_for(lab.endpoint) }}">Lab {{ '%02d' % lab.number }}</a>
+        </dd>
+      </div>
+      {% endfor %}
+    </dl>
+  </section>
+  {% endfor %}
+  <p class="muted" id="glossary-none" hidden>No word matches that search.</p>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Typing in the box hides the words that do not match (and empty letters).
+document.addEventListener("DOMContentLoaded", function () {
+  const search = $("#glossary-search");
+  search.addEventListener("input", function () {
+    const text = search.value.trim().toLowerCase();
+    let shown = 0;
+    $all(".glossary-group").forEach(function (group) {
+      let groupShown = 0;
+      $all(".glossary-entry", group).forEach(function (entry) {
+        const match = entry.textContent.toLowerCase().indexOf(text) >= 0;
+        entry.hidden = !match;
+        if (match) groupShown += 1;
+      });
+      group.hidden = groupShown === 0;
+      shown += groupShown;
+    });
+    $("#glossary-none").hidden = shown > 0;
+  });
+});
+</script>
+{% endblock %}

@@ -76,6 +76,7 @@ def make_packet(number, time, direction, source_ip, destination_ip, protocol,
         "info": info,
         "layers": layers,
         "payload_readable": readable,
+        "carries_login": False,   # set to True on the packet that carries the login (marked in the table)
         "payload_text": payload_bytes.decode("utf-8", errors="replace") if readable else "",
         "hex_dump": hex_dump(payload_bytes) if payload_bytes else "(no payload)",
     }
@@ -129,6 +130,7 @@ def build_http_capture():
                                {"name": "Hypertext Transfer Protocol", "visible": True,
                                 "fields": [["Request", "POST /login HTTP/1.1"], ["Host", SITE],
                                            ["Form data", form_body]]}, True))
+    packets[-1]["carries_login"] = True
     packets.append(make_packet(7, 0.077, "in", SERVER_IP, CLIENT_IP, "TCP", 80, CLIENT_PORT, "TCP", b"",
                                "80 → " + str(CLIENT_PORT) + " [ACK]", None, True))
     packets.append(make_packet(8, 0.102, "in", SERVER_IP, CLIENT_IP, "HTTP", 80, CLIENT_PORT, "TCP",
@@ -191,6 +193,7 @@ def build_https_capture():
                                request_record, "Application Data",
                                encrypted_layer("The HTTP POST /login request with the username and password"),
                                False))
+    packets[-1]["carries_login"] = True
 
     response_record = tls_record("HTTP/1.1 200 OK\r\nSet-Cookie: session=7f3a91c2\r\n\r\n<h1>Welcome back, John Doe</h1>")
     packets.append(make_packet(11, 0.131, "in", SERVER_IP, CLIENT_IP, "TLSv1.3", 443, CLIENT_PORT, "TCP",

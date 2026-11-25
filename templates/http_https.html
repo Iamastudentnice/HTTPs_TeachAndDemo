@@ -2,26 +2,10 @@
 {% block title %}HTTP vs HTTPS{% endblock %}
 {% block content %}
 <header class="page-header">
-  <div class="eyebrow">Start here · The core lesson</div>
+  <div class="eyebrow">Lab 01 · Start here</div>
   <h1>What Does HTTPS Actually Do?</h1>
-  <p class="lead">See what happens to your details when your browser sends them to a website.</p>
+  <p class="lead">Send a pretend login and see who can read it.</p>
 </header>
-
-<div class="lesson-intro">
-  <dl class="plain-terms">
-    <dt><span class="tag tag-blue">HTTP</span></dt>
-    <dd>Your information travels without encryption. Someone monitoring the connection may be able to read it.</dd>
-    <dt><span class="tag tag-green">HTTPS</span></dt>
-    <dd>Your information is encrypted while travelling between your browser and the website, making it much harder for others to read.</dd>
-    <dt><span class="tag">Padlock</span></dt>
-    <dd>The padlock indicates a protected HTTPS connection. It does not guarantee that the website itself is trustworthy.</dd>
-  </dl>
-  <div class="lesson-start">
-    <p class="small muted">New to this? A short guided tour walks you through it.</p>
-    <button class="btn btn-tutorial" type="button" data-start-guide>Start Here &mdash; Learn HTTPS</button>
-    <button class="btn btn-sm examiner-toggle" type="button" data-examiner-toggle><span class="examiner-line1">Examiner Button</span><span class="examiner-line2">Remove all restrictions</span></button>
-  </div>
-</div>
 
 <section class="card sim-card">
   <div class="sim-toolbar">
@@ -32,18 +16,20 @@
           <button class="active is-http" data-value="HTTP">HTTP</button>
           <button class="is-https" data-value="HTTPS">HTTPS</button>
         </div>
+        <p class="protocol-note" id="protocol-note">Sent as readable text.</p>
       </div>
       <div class="grow">
-        <label class="field" for="message">2. Demo login (fictional details - never type a real password)</label>
+        <label class="field" for="message">2. Demo login (made up - never a real password)</label>
         <textarea id="message" rows="2">{{ default_message }}</textarea>
       </div>
-      <div>
-        <label class="field">Optional</label>
+      <!-- Appears after the first full run, so the first screen has one idea only. -->
+      <div id="observer-field" hidden>
+        <label class="field">Next, try</label>
         <label class="checkbox" id="observer-option"><input type="checkbox" id="eavesdropper"> Add a Wi-Fi eavesdropper</label>
       </div>
     </div>
   </div>
-  <p class="lesson-hint" id="lesson-hint" aria-live="polite">Press Send message to begin.</p>
+  <p class="lesson-hint" id="lesson-hint" aria-live="polite"></p>
   <div class="net-diagram" id="diagram"></div>
   <div class="diagram-legend">
     <span><i style="color:var(--blue)"></i>Not encrypted</span>
@@ -54,7 +40,8 @@
   </div>
   <div id="player"></div>
 
-  <div class="sim-panels">
+  <!-- The output panels appear once a message has been sent. -->
+  <div class="sim-panels" id="sim-panels" hidden>
     <div class="grid grid-2">
       <div>
         <div class="output-label" style="margin-top:0">Your browser</div>
@@ -76,8 +63,8 @@
     </div>
 
     <!-- Fills in as you try each protocol, so the two can be compared side by side. -->
-    <div class="compare-box section" id="compare-box">
-      <div class="output-label" style="margin-top:0">Compare: what anyone on the network path can see</div>
+    <div class="compare-box section" id="compare-box" hidden>
+      <div class="output-label" style="margin-top:0">Compare: what anyone on the way can see</div>
       <div class="diff">
         <div>
           <div class="compare-head"><span class="tag tag-blue">HTTP</span> <span id="compare-http-note" class="small muted">Not tried yet</span></div>
@@ -101,7 +88,7 @@
         <pre class="output empty" id="server-view">Nothing received yet.</pre>
       </div>
       <div class="view-box" id="packet-log-box">
-        <h4><svg class="icon"><use href="#i-packets"/></svg> Packets sent - select one to inspect</h4>
+        <h4><svg class="icon"><use href="#i-packets"/></svg> Packets sent - open one</h4>
         <ul class="packet-log" id="packet-log"></ul>
       </div>
     </div>
@@ -110,23 +97,12 @@
 
 <section class="section">
   <details class="more">
-    <summary>Key words in plain English</summary>
-    <div class="more-body">
-      <p><strong>Browser</strong> - the app you use to visit websites, such as Chrome, Safari or Firefox.</p>
-      <p><strong>Server</strong> - the computer that provides the website.</p>
-      <p><strong>Encryption</strong> - scrambling information so unauthorised people cannot easily read it. Only someone with the right key can unscramble it.</p>
-      <p><strong>TLS</strong> - the technology that protects HTTPS connections. HTTPS is simply HTTP sent through TLS.</p>
-      <p><strong>Certificate</strong> - information used to verify a website's identity, a bit like an ID card for the website.</p>
-      <p><strong>Packet</strong> - a small piece of data travelling across the network. Your message is carried in packets.</p>
-    </div>
-  </details>
-  <details class="more">
     <summary>Learn more: what HTTPS does and does not protect</summary>
     <div class="more-body">
       <p><strong>It protects your data in transit.</strong> The contents of what you send and receive are encrypted, and any change made on the way is detected.</p>
       <p><strong>It does not hide everything.</strong> The network can still see which website you connect to, your IP address, and when and how much data is sent.</p>
       <p><strong>The certificate proves identity, it does not do the encrypting.</strong> It lets your browser check it is talking to the real website. The data itself is encrypted with a separate secret key agreed at the start (see Lab 03).</p>
-      <p><strong>It cannot judge the website.</strong> Scam sites can use HTTPS too, and HTTPS cannot protect a device that already has malware.</p>
+      <p><strong>The padlock is about the connection, not the website.</strong> Scam sites can use HTTPS too, and HTTPS cannot protect a device that already has malware.</p>
       <p><strong>Watching is not the same as tampering.</strong> The eavesdropper here only watches (a passive attack). Attackers who actively change or fake traffic are covered in the MITM lab.</p>
     </div>
   </details>
@@ -146,6 +122,7 @@
     </div>
   </details>
 </section>
+<p class="small muted">New words? Look them up in the <a href="{{ url_for('glossary_page') }}">Glossary</a>.</p>
 {% endblock %}
 
 {% block scripts %}

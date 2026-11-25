@@ -4,6 +4,7 @@ import os
 
 from flask import Flask, jsonify, redirect, render_template, request, session, url_for
 
+import glossary
 import progress
 from simulations import (arp_spoofing, certificates, encryption, http_https, mitm,
                          packet_inspection, tls_handshake, website_journey)
@@ -110,6 +111,13 @@ def packet_inspection_page():
     """Lab 7 page: packet inspector."""
     return render_template("packet_inspection.html", active="packet_inspection",
                            example_filters=packet_inspection.SUPPORTED_FILTERS)
+
+
+@app.route("/glossary")
+def glossary_page():
+    """The glossary: every key word from the labs, in alphabetical order."""
+    labs = {module["slug"]: module for module in progress.MODULES}
+    return render_template("glossary.html", active="glossary", groups=glossary.terms_by_letter(), labs=labs)
 
 
 # --- Module 1 - HTTP vs HTTPS ---

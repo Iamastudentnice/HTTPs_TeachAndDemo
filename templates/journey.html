@@ -26,9 +26,7 @@
   </div>
   <p class="journey-error" id="journey-error" role="alert" hidden></p>
   <p class="journey-changed" id="journey-changed" hidden>Press Start Journey to follow the new address.</p>
-  <p class="small muted journey-note">Simulation only: nothing is looked up and no website is contacted.
-    This is a simplified model. Real browsers can skip, combine or reorder some stages because of
-    caching, connections that are already open, the protocol in use and network conditions.</p>
+  <p class="small muted journey-note">Simulation only: no website is looked up or contacted.</p>
 </form>
 
 <section class="section card sim-card hidden" id="journey">
@@ -92,8 +90,8 @@
     <li>The browser asked for the page and got it back.</li>
     <li>The browser drew the page on your screen.</li>
   </ol>
-  <p class="small muted">Remember: this is a simplified model. Real visits can skip or combine some of these stages.</p>
-  <p class="small"><strong>Next lab: {{ next_lab.title }}.</strong> {{ next_lab.summary }}</p>
+  <p class="small muted">Remember: this is a simplified model. Real browsers can skip, combine or reorder some
+    stages because of caching, connections that are already open, the protocol in use and network conditions.</p>
   <div class="controls-row">
     <a class="btn btn-primary" href="{{ url_for(next_lab.endpoint) }}">Continue to {{ next_lab.title }}</a>
     <a class="btn" href="{{ url_for('index') }}">Explore Freely</a>

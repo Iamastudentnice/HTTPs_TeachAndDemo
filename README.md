@@ -58,16 +58,19 @@ press `Ctrl + C` in the terminal to stop the app.
 
 ## Using the app
 
-- **Start page** (`/`) – the HTTP vs HTTPS lesson. It begins with a simple browser-to-website
-  connection; the Wi-Fi eavesdropper is optional and can be switched on later.
+- **Start page** (`/`) – the HTTP vs HTTPS lesson. It opens with one action (Send message) and
+  reveals the rest as you go: the outputs after Send, then the comparison and the optional Wi-Fi
+  eavesdropper after the first full run.
 - **Start Here – Learn HTTPS** (green button) – an optional six-step tutorial. Each step has a task
   (for example, finish an HTTP run or open a packet) and Next only works once it has really been done.
   The tutorial box can be dragged by its header, and Hide (or Esc) tucks it away without ending it.
   While the tutorial is running, links to other labs are blocked (the page shakes and a short
-  warning appears). Skip tutorial (click twice: it is padlocked) or the Examiner Button ends this.
+  warning appears). Skip tutorial (click twice: it is padlocked) is the one way out early: it removes
+  every restriction, and all labs open freely.
   Progress is kept for the browser tab: a refresh returns to the same step, and opening another lab
   by the back button or a typed address leads straight back to the tutorial.
-  Each step is split into small tasks shown one at a time ("What to do"). Reading tasks have a
+  The box shows only what is happening (one sentence), what to do, and an arrow to where to look.
+  Each step is split into small tasks shown one at a time. Reading tasks have a
   Got it button; action tasks (Send, Switch to HTTPS, tick the eavesdropper box) finish by
   themselves the moment the action really happens. A small green arrow points at the current task
   only, and it disappears as soon as the task is done (where there is no room for an arrow, the
@@ -76,9 +79,10 @@ press `Ctrl + C` in the terminal to stop the app.
 - **Lab completed prompt** – when a lab's activities are all done, a box offers
   "Continue to <next lab>" and "Explore Freely" (Packet Inspector, the last lab, only offers
   Explore Freely). Nothing opens by itself. Completing Lab 01 also ends the tutorial lock.
-- **Examiner Button – Remove all restrictions** (amber button on the start page and in the tutorial) –
-  unlocks every tutorial step straight away for this browser tab. Press it again to restore the normal
-  guided mode. It does not change or skip any simulation.
+- **One part at a time** – Labs 05, 06 and 07 are shown in short numbered parts, like the stages of
+  Lab 02. "Next" under the last part reveals the next one; "Show all" reveals everything at once.
+- **Glossary** (`/glossary`, at the end of the index) – every key word from the labs in one line,
+  A–Z, with a search box and a link to the lab that uses it.
 - **The Journey of a Website** (`/journey`, Lab 02) – type an address (google.com is filled in) and
   follow it through eight stages: reading the address, saved copies (caching), DNS, leaving the home
   network, the TCP connection, TLS, the HTTP request and response, and the page appearing. Each stage
@@ -95,6 +99,7 @@ press `Ctrl + C` in the terminal to stop the app.
 ```
 app.py                 Flask routes (pages + JSON API)
 progress.py            Exploration progress
+glossary.py            The glossary words and their one-line meanings
 simulations/           One Python module per lab
 templates/             HTML pages
 static/css, static/js  Styling and animations (interactions.js is shared)

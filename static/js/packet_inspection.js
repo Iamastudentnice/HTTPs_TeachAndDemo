@@ -38,13 +38,18 @@ document.addEventListener("DOMContentLoaded", function () {
     body.innerHTML = "";
     packets.forEach(function (packet) {
       const row = document.createElement("tr");
-      row.className = "proto-" + protocolClass(packet.protocol) + (selected === packet.number ? " selected" : "");
+      row.className = "proto-" + protocolClass(packet.protocol) + (selected === packet.number ? " selected" : "") +
+        (packet.carries_login ? " is-login" : "");
       [packet.number, packet.time, packet.source_ip, packet.destination_ip, packet.protocol,
         packet.source_port, packet.destination_port, packet.length, packet.info].forEach(function (value) {
         const cell = document.createElement("td");
         cell.textContent = value;
         row.appendChild(cell);
       });
+      // Point out the packet that carries the login, so it is clear where to look.
+      if (packet.carries_login) {
+        row.lastChild.insertAdjacentHTML("beforeend", ' <span class="tag tag-red">your login</span>');
+      }
       row.addEventListener("click", function () { selectPacket(packet); });
       body.appendChild(row);
     });

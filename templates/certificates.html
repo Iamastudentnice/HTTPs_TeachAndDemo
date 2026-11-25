@@ -4,14 +4,17 @@
 <header class="page-header">
   <div class="eyebrow">Lab 05 · Certificate explorer</div>
   <h1>Certificates Prove Who You Reached</h1>
-  <p class="lead">Pick a scenario and watch the browser's four checks pass or fail.</p>
+  <p class="lead">A certificate is a website's ID card. Let's check one.</p>
 </header>
 
-<div class="cert-layout" id="cert-layout">
-  <aside>
+<!-- The page is shown one part at a time (see setupLessonParts in interactions.js). -->
+<section class="lesson-part" data-part data-title="Pick a certificate">
+  <div class="part-head"><span class="part-num">1</span><div>
+    <h2>Pick a certificate</h2>
+    <p>Each one has a different problem. Watch the browser's answer.</p>
+  </div></div>
+  <div class="cert-layout" id="cert-layout">
     <div class="card">
-      <h3>Scenarios</h3>
-      <p class="instruction">Select a scenario.</p>
       <div class="scenario-list" id="scenario-list">
         {% for key, scenario in scenarios.items() %}
         <button class="scenario-btn {{ 'active' if loop.first }}" data-scenario="{{ key }}">
@@ -20,14 +23,6 @@
         {% endfor %}
       </div>
     </div>
-    <div class="card">
-      <h3>Browser trust store</h3>
-      <p class="instruction">Untick a root CA to break trust.</p>
-      <div id="trust-store"></div>
-    </div>
-  </aside>
-
-  <div>
     <div class="browser">
       <div class="browser-bar">
         <div class="browser-dots"><i></i><i></i><i></i></div>
@@ -39,33 +34,52 @@
       </div>
       <div class="browser-body" id="browser-body"><p class="muted">Loading…</p></div>
     </div>
-
-    <div class="grid grid-2 section">
-      <div class="card">
-        <h3>Browser checks</h3>
-        <ul class="check-list" id="checks"></ul>
-      </div>
-      <div class="card">
-        <h3>Certificate chain</h3>
-        <p class="instruction">Click a certificate to view its fields.</p>
-        <div class="chain" id="chain"></div>
-      </div>
-    </div>
-
-    <p class="instruction section">Select a field to see what it means.</p>
-    <div class="cert" id="certificate"></div>
-
-    <details class="more">
-      <summary>Technical details: certificate authorities, chains and trust stores</summary>
-      <div class="more-body">
-        <p><strong>Certificate Authority (CA):</strong> an organisation that checks you control a domain before signing a certificate for it.</p>
-        <p><strong>Chain:</strong> site certificate ← signed by intermediate CA ← signed by root CA. The browser verifies every signature with the issuer's public key.</p>
-        <p><strong>Trust store:</strong> the small list of root CAs shipped with your browser/OS. If the chain doesn't end there, the site is untrusted.</p>
-        <p><strong>Remember:</strong> a valid certificate only proves you reached the real owner of the domain. Phishing sites can get valid certificates for their own look-alike domains.</p>
-      </div>
-    </details>
   </div>
-</div>
+</section>
+
+<section class="lesson-part" data-part data-title="See the four checks">
+  <div class="part-head"><span class="part-num">2</span><div>
+    <h2>See the four checks</h2>
+    <p>Your browser checks four things. One failure means a warning.</p>
+  </div></div>
+  <div class="card"><ul class="check-list" id="checks"></ul></div>
+</section>
+
+<section class="lesson-part" data-part data-title="Follow the chain of trust">
+  <div class="part-head"><span class="part-num">3</span><div>
+    <h2>Follow the chain of trust</h2>
+    <p>Each certificate is signed by the one before it, back to a trusted root.</p>
+  </div></div>
+  <div class="grid grid-2">
+    <div class="card">
+      <h3>Certificate chain</h3>
+      <div class="chain" id="chain"></div>
+    </div>
+    <div class="card">
+      <h3>Browser trust store</h3>
+      <p class="instruction">Untick the root to break trust.</p>
+      <div id="trust-store"></div>
+    </div>
+  </div>
+</section>
+
+<section class="lesson-part" data-part data-title="Look inside the certificate">
+  <div class="part-head"><span class="part-num">4</span><div>
+    <h2>Look inside the certificate</h2>
+    <p>Select a field to see what it means. Click the chain above to switch certificate.</p>
+  </div></div>
+  <div class="cert" id="certificate"></div>
+
+  <details class="more">
+    <summary>Technical details: certificate authorities, chains and trust stores</summary>
+    <div class="more-body">
+      <p><strong>Certificate Authority (CA):</strong> an organisation that checks you control a domain before signing a certificate for it.</p>
+      <p><strong>Chain:</strong> site certificate ← signed by intermediate CA ← signed by root CA. The browser verifies every signature with the issuer's public key.</p>
+      <p><strong>Trust store:</strong> the small list of root CAs shipped with your browser/OS. If the chain doesn't end there, the site is untrusted.</p>
+      <p><strong>Remember:</strong> a valid certificate only proves you reached the real owner of the domain. Phishing sites can get valid certificates for their own look-alike domains.</p>
+    </div>
+  </details>
+</section>
 {% endblock %}
 
 {% block scripts %}

@@ -230,12 +230,12 @@ code, pre, .mono { font-family: var(--mono); font-size: 0.86em; }
 .segmented button.active.is-attack { box-shadow: inset 0 -2px 0 var(--red); }
 
 label.field { display: block; font-size: 0.8rem; color: var(--muted); margin-bottom: 5px; font-weight: 500; }
-input[type="text"], textarea, select {
+input[type="text"], input[type="search"], textarea, select {
   width: 100%; background: var(--inset); color: var(--text-strong);
   border: 1px solid var(--line-strong); border-radius: var(--radius);
   padding: 7px 10px; font: inherit; font-size: 0.9rem;
 }
-input[type="text"]:hover, textarea:hover, select:hover { border-color: var(--muted); }
+input[type="text"]:hover, input[type="search"]:hover, textarea:hover, select:hover { border-color: var(--muted); }
 textarea { font-family: var(--mono); font-size: 0.84rem; resize: vertical; min-height: 64px; }
 input:focus, textarea:focus, select:focus { outline: 2px solid var(--accent); outline-offset: 0; }
 .checkbox { display: inline-flex; align-items: center; gap: 8px; font-size: 0.9rem; cursor: pointer; user-select: none; }
@@ -407,6 +407,8 @@ table.compare td:first-child { color: var(--text-strong); font-weight: 500; }
   font-size: 0.78rem; color: var(--muted);
 }
 .diagram-hint::before { content: "→ "; font-family: var(--mono); color: var(--accent); }
+/* Only mention packets once there is one to select */
+.net-diagram:not(.has-packet) .diagram-hint { display: none; }
 
 .diagram-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 9px 18px; border-top: 1px solid var(--line); font-size: 0.74rem; color: var(--muted); background: var(--surface); }
 .diagram-legend span { display: inline-flex; align-items: center; gap: 6px; }
@@ -610,9 +612,6 @@ mark.changed { background: #EBCBC6; color: var(--red-text); font-weight: 600; pa
 .scenario-groups { display: flex; flex-wrap: wrap; gap: 14px 20px; }
 .scenario-group .group-label { font-family: var(--mono); font-size: 0.66rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--faint); margin-bottom: 5px; }
 .scenario-tabs { display: flex; flex-wrap: wrap; gap: 0; }
-.mode-key { display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; font-size: 0.84rem; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }
-.mode-key dt { font-family: var(--mono); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; padding-top: 2px; color: var(--text-strong); }
-.mode-key dd { margin: 0; color: var(--muted); }
 .option-panel { display: flex; flex-wrap: wrap; gap: 14px 18px; align-items: flex-end; }
 .scenario-goal { margin: 0; padding: 10px 18px; font-size: 0.9rem; color: var(--text-strong); border-bottom: 1px solid var(--line); background: var(--surface); }
 .scenario-goal::before { content: "Scenario — "; color: var(--faint); font-family: var(--mono); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; }
@@ -783,15 +782,6 @@ details.more .more-body p:last-child { margin-bottom: 0; }
 .btn-tutorial:hover:not(:disabled) { background: var(--tutorial-hover); border-color: var(--tutorial-hover); }
 .site-header .btn-tutorial { min-height: 34px; }
 
-.lesson-intro {
-  display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 16px 32px; align-items: center;
-  margin-bottom: 20px;
-}
-.plain-terms { display: grid; grid-template-columns: 80px 1fr; gap: 6px 12px; margin: 0; font-size: 0.92rem; max-width: 72ch; }
-.plain-terms dt { padding-top: 1px; }
-.plain-terms dd { margin: 0; color: var(--text); }
-.lesson-start { border-left: 2px solid var(--tutorial); padding: 4px 0 4px 16px; max-width: 280px; }
-.lesson-start p { margin: 0 0 8px; }
 
 /* One-line "what to do next" hint above the diagram */
 .lesson-hint {
@@ -822,12 +812,8 @@ details.more .more-body p:last-child { margin-bottom: 0; }
 .guide-todo { margin: 8px 0 0; padding-top: 8px; border-top: 1px solid var(--line-strong); font-size: 0.86rem; color: var(--text); }
 .guide-todo strong { color: var(--green-text); }
 
-@media (max-width: 1080px) {
-  .lesson-intro { grid-template-columns: 1fr; }
-}
 @media (max-width: 640px) {
   .guide { width: calc(100vw - 24px); }
-  .plain-terms { grid-template-columns: 1fr; }
   .site-header .btn-tutorial { padding: 4px 10px; font-size: 0.8rem; }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -835,29 +821,12 @@ details.more .more-body p:last-child { margin-bottom: 0; }
 }
 .lab-group { font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--faint); padding: 14px 4px 6px; border-bottom: 1px solid var(--line); }
 
-/* ---------- Tutorial: dragging, section locks, examiner mode ---------- */
+/* ---------- Tutorial: dragging and section locks ---------- */
 
 /* The header of the tutorial box is the drag handle. */
 .guide-head { cursor: grab; margin: -12px -14px 0; padding: 12px 14px 8px; touch-action: none; }
 body.guide-dragging, body.guide-dragging * { user-select: none; cursor: grabbing !important; }
 .guide.at-moved::before { display: none; }
-
-.guide-examiner { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 2px 0 8px; }
-.examiner-note { display: none; font-size: 0.76rem; color: var(--amber-text); }
-body.examiner-mode .examiner-note { display: inline; }
-
-/* Amber: easy to spot, and clearly different from the green tutorial button. */
-.examiner-toggle { background: var(--amber-bg); border-color: var(--amber); color: var(--amber-text); font-weight: 600; white-space: normal; text-align: left; }
-.examiner-toggle:hover:not(:disabled) { background: #EADFC8; border-color: var(--amber-text); }
-.examiner-toggle.is-on { background: var(--amber); border-color: var(--amber); color: var(--text-strong); }
-.lesson-start .examiner-toggle { margin-top: 8px; }
-/* Two lines inside one button */
-.examiner-toggle { flex-direction: column; align-items: flex-start; gap: 0; line-height: 1.25; padding-top: 5px; padding-bottom: 5px; }
-.examiner-line1 { display: block; font-weight: 700; }
-.examiner-line2 { display: block; font-weight: 500; font-size: 0.92em; }
-
-.guide-status { margin: 8px 0 0; font-size: 0.82rem; color: var(--muted); }
-.guide-status.is-complete { color: var(--green-text); font-weight: 500; }
 
 /* Next is never disabled (so a click can show the warning), it just looks locked. */
 .btn.is-locked, .btn-primary.is-locked:hover:not(:disabled) {
@@ -928,10 +897,6 @@ body.examiner-mode .examiner-note { display: inline; }
 @media (prefers-reduced-motion: reduce) {
   .main.nav-shake { animation: none; }
 }
-/* While the tutorial box is on screen, the "Start here" box is redundant: hide it but keep its space */
-body.guide-visible .lesson-start { visibility: hidden; }
-.guide-next-hint { margin: 8px 0 -4px; text-align: right; font-size: 0.78rem; font-weight: 600; color: var(--green-text); }
-.guide-next-hint[hidden] { display: none; }
 .guide.at-left::before { right: -6px; left: auto; top: 22px; transform: rotate(135deg); }
 /* When there is no free space for an arrow, its element gets this outline instead */
 .pointer-fallback { outline: 2px dashed var(--tutorial) !important; outline-offset: 3px; }
@@ -1027,7 +992,9 @@ body.guide-visible .lesson-start { visibility: hidden; }
 
 .guide-task .guide-todo.is-complete { color: var(--green-text); font-weight: 600; }
 .guide-gotit { margin-top: 8px; }
-.guide-status:empty { display: none; }
+/* The one thing to do now, shown as an action */
+.guide-task .guide-todo { font-weight: 600; color: var(--text-strong); }
+.guide-task .guide-todo:not(.is-complete)::before { content: "\2192\00a0"; color: var(--green-text); }
 
 /* The output box the current task is explaining stands out */
 .guide-spotlight { outline: 3px solid var(--tutorial) !important; outline-offset: 4px; box-shadow: 0 0 0 7px var(--green-bg); }
@@ -1038,6 +1005,60 @@ body.guide-visible .lesson-start { visibility: hidden; }
 
 /* While the tutorial is on screen it is the only source of instructions: the page's own hint
    line and pulsing highlights wait, so two different instructions never compete. */
-body.guide-visible .lesson-hint { color: transparent; }
+body.guide-visible .lesson-hint, body.guide-visible .protocol-note { color: transparent; }
 body.guide-visible .segmented button.is-next,
 body.guide-visible .checkbox.is-next { animation: none; background: transparent; color: inherit; outline: none; }
+
+/* ---------- Less reading: pieces that appear when they are needed ---------- */
+
+.sim-panels[hidden], .compare-box[hidden], [data-part][hidden] { display: none; }
+.lesson-hint:empty { display: none; }
+/* One short line under the protocol switch */
+.protocol-note { margin: 6px 0 0; font-size: 0.8rem; color: var(--muted); }
+
+/* ---------- Glossary ---------- */
+
+/* In the index, the glossary closes the learning path (above "All labs overview"). */
+.nav a.glossary-link { margin-top: 10px; border-top: 1px solid var(--line); padding-top: 10px; }
+.nav a.glossary-link + a.all-labs { margin-top: 0; border-top: none; padding-top: 6px; }
+.glossary-tools { display: grid; gap: 6px; max-width: 520px; margin-bottom: 20px; }
+.glossary-letters { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+.glossary-letters a {
+  font-family: var(--mono); font-size: 0.78rem; min-width: 28px; text-align: center; padding: 3px 6px;
+  border: 1px solid var(--line); border-radius: var(--radius); color: var(--text); text-decoration: none;
+}
+.glossary-letters a:hover { border-color: var(--accent); color: var(--accent); }
+.glossary-group { scroll-margin-top: calc(var(--header-height) + 12px); }
+.glossary-group[hidden], .glossary-entry[hidden] { display: none; }
+.glossary-letter {
+  font-family: var(--mono); font-size: 0.8rem; letter-spacing: 0.08em; color: var(--muted);
+  margin: 18px 0 4px; padding-bottom: 4px; border-bottom: 1px solid var(--line);
+}
+.glossary dl { margin: 0; }
+.glossary-entry { display: grid; grid-template-columns: minmax(140px, 220px) 1fr; gap: 4px 16px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.glossary-entry dt { font-weight: 700; color: var(--text-strong); }
+.glossary-entry dd { margin: 0; color: var(--text); }
+.glossary-lab { margin-left: 6px; font-family: var(--mono); font-size: 0.72rem; color: var(--muted); }
+@media (max-width: 640px) {
+  .glossary-entry { grid-template-columns: 1fr; }
+}
+
+/* ---------- Lesson parts: one part at a time, with a Next button ---------- */
+
+.lesson-part { margin-top: 24px; scroll-margin-top: calc(var(--header-height) + 16px); }
+.lesson-part:first-of-type { margin-top: 0; }
+.part-head { display: flex; gap: 12px; align-items: baseline; margin-bottom: 12px; }
+.part-num {
+  flex: none; font-family: var(--mono); font-size: 0.78rem; width: 24px; height: 24px; line-height: 22px;
+  text-align: center; border: 1px solid var(--accent); color: var(--accent); border-radius: 50%;
+}
+.part-head h2 { margin: 0; font-size: 1.1rem; }
+.part-head p { margin: 2px 0 0; color: var(--muted); font-size: 0.9rem; }
+.part-next { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin: 20px 0 0; }
+.part-next[hidden] { display: none; }
+.part-count { font-family: var(--mono); font-size: 0.72rem; color: var(--faint); margin-left: auto; }
+.lesson-part .grid > .card { margin-top: 0; }
+
+/* MITM: the attack options are optional, so they sit in a closed section */
+.options-more { margin-top: 12px; }
+.pi-table tbody tr.is-login td { font-weight: 600; }

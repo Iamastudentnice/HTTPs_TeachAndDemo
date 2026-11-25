@@ -54,15 +54,15 @@ FIELD_EXPLANATIONS = {
 # Description of every scenario offered in the explorer.
 SCENARIOS = {
     "valid": {"title": "Valid certificate",
-              "summary": "Correct domain, in date, signed by a trusted CA."},
+              "summary": "Everything checks out."},
     "expired": {"title": "Expired certificate",
-                "summary": "The validity period ended 35 days ago."},
+                "summary": "Its end date has passed."},
     "mismatch": {"title": "Domain name mismatch",
-                 "summary": "The certificate is for a different domain."},
+                 "summary": "It is for a different website."},
     "untrusted": {"title": "Untrusted certificate authority",
-                  "summary": "Issued by a CA that is not in the trust store."},
+                  "summary": "Signed by an unknown authority."},
     "bad_signature": {"title": "Invalid certificate signature",
-                      "summary": "Claims to be issued by the Demo CA but the signature is forged."},
+                      "summary": "Its signature is forged."},
 }
 
 # All generated certificates are stored here after the first call.
@@ -348,9 +348,8 @@ def verify_chain(chain, hostname, trusted_root_names):
             "trusted": True,
             "error_code": "",
             "headline": "Connection is secure",
-            "message": "The certificate is valid for " + hostname + ". This proves you are "
-                       "talking to the holder of this domain's key. It does NOT prove the "
-                       "website is honest or safe.",
+            "message": "The certificate is valid for " + hostname + ". It proves who you reached, "
+                       "not that the website is honest.",
         }
     return {"checks": checks, "verdict": verdict}
 

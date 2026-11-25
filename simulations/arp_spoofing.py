@@ -81,16 +81,14 @@ def build_arp_steps(defence="none"):
     steps = []
     steps.append(make_step(
         "1. The local network",
-        "All three devices are plugged into the same switch. The victim wants to reach the "
-        "internet through the gateway, but first needs the gateway's MAC address.",
+        "Three devices share one switch. The victim needs the gateway's MAC address first.",
         highlight={VICTIM: "active"},
         panels={"tables": {VICTIM: [], GATEWAY: [], ATTACKER: []},
                 "defence": DEFENCES[defence]}))
 
     steps.append(make_step(
         "2. ARP request (broadcast)",
-        "The victim broadcasts: 'Who has " + gateway_ip + "? Tell " + victim_ip + "'. Every "
-        "device on the network, including the attacker, hears it.",
+        "The victim asks everyone: 'Who has " + gateway_ip + "?' The attacker hears it too.",
         packet=direct_packet(VICTIM, GATEWAY, "plain", "ARP: Who has " + gateway_ip + "?",
                              frame_details("request", VICTIM, "ff:ff:ff:ff:ff:ff (broadcast)",
                                            victim_ip, DEVICES[VICTIM]["mac"], gateway_ip)),
@@ -109,8 +107,7 @@ def build_arp_steps(defence="none"):
 
     steps.append(make_step(
         "4. Normal traffic goes straight to the gateway",
-        "Frames for the internet are addressed to the gateway's MAC, so the switch delivers "
-        "them directly. The attacker is not on the path.",
+        "Traffic goes straight to the gateway. The attacker is not on the path.",
         packet=direct_packet(VICTIM, GATEWAY, "plain", "Frame → 00:11:22:33:44:01",
                              {"Ethernet destination MAC": DEVICES[GATEWAY]["mac"],
                               "IP destination": "198.51.100.7 (a website)",
@@ -126,15 +123,13 @@ def build_arp_steps(defence="none"):
     if defence == "dai":
         steps.append(make_step(
             "5. Attacker sends a forged ARP reply",
-            "The attacker claims to be the gateway. But the switch runs Dynamic ARP Inspection: "
-            "it compares ARP replies with its trusted DHCP records.",
+            "The attacker claims to be the gateway, but the switch checks every ARP reply.",
             packet=forged_to_victim,
             highlight={ATTACKER: "danger"}))
         steps.append(make_step(
             "6. The switch drops the forged reply",
-            "The sender MAC does not own " + gateway_ip + " according to the DHCP snooping table, "
-            "so the packet is discarded and the port can be flagged. The victim's ARP table "
-            "stays correct.",
+            "That MAC does not own " + gateway_ip + ", so the switch drops the reply. "
+            "The victim's table stays correct.",
             highlight={ATTACKER: "inactive", VICTIM: "secure"},
             panels={"detection": ["Switch log: Invalid ARP from de:ad:be:ef:00:66 claiming "
                                   + gateway_ip + " - dropped (DAI)."], "outcome": "safe"}))
@@ -150,16 +145,14 @@ def build_arp_steps(defence="none"):
     if defence == "static":
         steps.append(make_step(
             "5. Attacker sends a forged ARP reply",
-            "The attacker claims to be the gateway, but the victim has a STATIC ARP entry for "
-            "the gateway that cannot be overwritten by ARP replies.",
+            "The attacker claims to be the gateway, but the victim's entry is fixed (static).",
             packet=forged_to_victim,
             highlight={ATTACKER: "danger"},
             panels={"tables": {VICTIM: [table_entry(GATEWAY, "static")],
                                GATEWAY: [table_entry(VICTIM)], ATTACKER: []}}))
         steps.append(make_step(
             "6. The forged reply is ignored",
-            "The victim keeps sending frames to the real gateway. Static entries work, but are "
-            "hard to manage on large networks.",
+            "Traffic still goes to the real gateway. (Static entries are hard to manage at scale.)",
             packet=direct_packet(VICTIM, GATEWAY, "plain", "Frame → 00:11:22:33:44:01",
                                  {"Ethernet destination MAC": DEVICES[GATEWAY]["mac"]}),
             highlight={VICTIM: "secure", ATTACKER: "inactive"},
@@ -169,8 +162,8 @@ def build_arp_steps(defence="none"):
     # No defence: the attack succeeds.
     steps.append(make_step(
         "5. Attacker poisons the victim's ARP table",
-        "The attacker sends an unsolicited ARP reply: '" + gateway_ip + " is at " + attacker_mac
-        + "'. ARP has no authentication, so the victim overwrites the correct entry.",
+        "A fake reply says '" + gateway_ip + " is at " + attacker_mac
+        + "'. ARP has no checks, so the victim believes it.",
         packet=forged_to_victim,
         highlight={ATTACKER: "danger", VICTIM: "danger"},
         panels={"tables": {VICTIM: poisoned_victim_table, GATEWAY: [table_entry(VICTIM)],
@@ -179,8 +172,7 @@ def build_arp_steps(defence="none"):
     poisoned_gateway_table = [table_entry(VICTIM, "poisoned", attacker_mac)]
     steps.append(make_step(
         "6. Attacker poisons the gateway too",
-        "A second forged reply tells the gateway '" + victim_ip + " is at " + attacker_mac
-        + "'. Now traffic in BOTH directions will be sent to the attacker.",
+        "A second fake reply fools the gateway. Now traffic both ways goes to the attacker.",
         packet=make_packet(ATTACKER, GATEWAY, "malicious", "Forged ARP: " + victim_ip + " is at de:ad:..",
                            frame_details("unsolicited reply", ATTACKER, DEVICES[GATEWAY]["mac"],
                                          victim_ip + " (LIE)", attacker_mac, gateway_ip)),
@@ -190,8 +182,7 @@ def build_arp_steps(defence="none"):
 
     steps.append(make_step(
         "7. Victim's traffic now goes to the attacker",
-        "The victim still uses the correct IP address for the gateway, but the frame is "
-        "addressed to the attacker's MAC - so the switch delivers it to the attacker.",
+        "The IP address is right, but the MAC is the attacker's - so the attacker gets it.",
         packet=make_packet(VICTIM, ATTACKER, "malicious", "Frame → de:ad:be:ef:00:66",
                            {"Ethernet destination MAC": attacker_mac + " (attacker!)",
                             "IP destination": "198.51.100.7 (unchanged)",
@@ -200,8 +191,7 @@ def build_arp_steps(defence="none"):
 
     steps.append(make_step(
         "8. Attacker forwards to the real gateway",
-        "With IP forwarding enabled, the attacker passes traffic on so the victim's internet "
-        "keeps working and nothing seems wrong. The attacker is now a man in the middle.",
+        "The attacker passes traffic on, so nothing seems wrong. It is now a man in the middle.",
         packet=make_packet(ATTACKER, GATEWAY, "malicious", "Forwarded frame",
                            {"Ethernet destination MAC": DEVICES[GATEWAY]["mac"],
                             "Note": "HTTP content is readable; HTTPS content stays encrypted"}),
@@ -212,8 +202,7 @@ def build_arp_steps(defence="none"):
     warnings = detect_arp_spoofing(victim_view)
     steps.append(make_step(
         "9. Detecting the attack",
-        "Python's detect_arp_spoofing() scanned the victim's ARP table: two different IPs now "
-        "share one MAC address. Tools like arpwatch and switch DAI look for exactly this.",
+        "Python scanned the ARP table: two IP addresses now share one MAC. That is the clue.",
         highlight={VICTIM: "warning"},
         panels={"tables": {VICTIM: victim_view, GATEWAY: poisoned_gateway_table,
                            ATTACKER: [table_entry(VICTIM), table_entry(GATEWAY)]},

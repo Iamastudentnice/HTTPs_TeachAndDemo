@@ -91,8 +91,8 @@ def build_handshake_steps(message="GET /account HTTP/1.1"):
     stages = []
 
     stages.append(make_stage(
-        1, "Client Hello", "Browser (client) → Server",
-        "The browser starts the conversation and proposes how to secure it.",
+        1, "Browser says hello (Client Hello)", "Browser (client) → Server",
+        "Your browser suggests how to protect the chat, and sends half of a key.",
         [
             "Supported TLS versions: TLS 1.3, TLS 1.2",
             "Cipher suites: TLS_AES_128_GCM_SHA256, TLS_AES_256_GCM_SHA384, TLS_CHACHA20_POLY1305_SHA256",
@@ -101,8 +101,7 @@ def build_handshake_steps(message="GET /account HTTP/1.1"):
             "key_share (X25519 ephemeral PUBLIC key): " + keys["client_public"],
         ],
         "The server needs to know which versions and algorithms the browser supports.",
-        "In TLS 1.3 the browser sends its Diffie-Hellman public key immediately, which "
-        "lets the handshake finish in just one round trip.",
+        "Speed: sending its public key now lets TLS 1.3 finish in one round trip.",
         packet=make_packet(CLIENT, SERVER, "plain", "ClientHello",
                            {"Message": "ClientHello", "Encrypted": "No (handshake has not started)",
                             "key_share": keys["client_public"][:24] + "...", "SNI": SERVER_NAME}),
@@ -111,8 +110,8 @@ def build_handshake_steps(message="GET /account HTTP/1.1"):
     ))
 
     stages.append(make_stage(
-        2, "Server Hello", "Server → Browser",
-        "The server picks one version and cipher suite and sends its own key share.",
+        2, "Website replies (Server Hello)", "Server → Browser",
+        "The website picks the settings and sends its half of the key.",
         [
             "Selected version: TLS 1.3",
             "Selected cipher suite: TLS_AES_256_GCM_SHA384",
@@ -120,8 +119,7 @@ def build_handshake_steps(message="GET /account HTTP/1.1"):
             "key_share (X25519 ephemeral PUBLIC key): " + keys["server_public"],
         ],
         "Both sides must agree on the same algorithms before they can talk securely.",
-        "After this message both sides can already compute handshake keys, so everything "
-        "that follows (including the certificate) is encrypted.",
+        "From here on, everything (even the certificate) is encrypted.",
         packet=make_packet(SERVER, CLIENT, "plain", "ServerHello",
                            {"Message": "ServerHello", "Encrypted": "No",
                             "Cipher suite": "TLS_AES_256_GCM_SHA384",
@@ -130,8 +128,8 @@ def build_handshake_steps(message="GET /account HTTP/1.1"):
     ))
 
     stages.append(make_stage(
-        3, "Server Certificate", "Server → Browser (encrypted with handshake keys)",
-        "The server sends its certificate chain plus a CertificateVerify signature.",
+        3, "Website proves who it is (Certificate)", "Server → Browser (encrypted with handshake keys)",
+        "The website sends its ID card (certificate) and signs the handshake.",
         [
             "Certificate: CN=" + SERVER_NAME + ", issued by 'Demo Intermediate CA'",
             "Intermediate certificate: issued by 'Demo Root CA'",
@@ -140,9 +138,8 @@ def build_handshake_steps(message="GET /account HTTP/1.1"):
             "Finished: a MAC proving the server saw the same handshake messages",
         ],
         "Without proof of identity, the browser could be talking to an impostor.",
-        "Authentication. The certificate links the domain name to a public key; the "
-        "signature proves the server actually holds the matching private key. The "
-        "certificate is NOT used to encrypt your data.",
+        "Authentication: the certificate links the name to a public key, and the signature "
+        "proves the server holds the matching private key. It does NOT encrypt your data.",
         packet=make_packet(SERVER, CLIENT, "encrypted", "Certificate + Verify",
                            {"Messages": "EncryptedExtensions, Certificate, CertificateVerify, Finished",
                             "Encrypted": "Yes - with handshake keys (TLS 1.3 hides the certificate)"}),
@@ -150,8 +147,8 @@ def build_handshake_steps(message="GET /account HTTP/1.1"):
     ))
 
     stages.append(make_stage(
-        4, "Certificate Verification", "Browser (local check - nothing is sent)",
-        "The browser checks the certificate before trusting the server.",
+        4, "Browser checks the ID (Verification)", "Browser (local check - nothing is sent)",
+        "Your browser checks the certificate. Nothing is sent in this step.",
         [
             "Does the certificate cover " + SERVER_NAME + "? ✔",
             "Is today within the validity period? ✔",
@@ -160,14 +157,13 @@ def build_handshake_steps(message="GET /account HTTP/1.1"):
             "Does CertificateVerify validate with the certificate's public key? ✔",
         ],
         "A certificate is only useful if the browser actually validates it.",
-        "Prevents impersonation. If any check fails the browser shows a warning and "
-        "stops the connection (Lab 05 lets you break each check).",
+        "Stops impersonation: if any check fails, the browser warns you and stops (try it in Lab 05).",
         highlight={CLIENT: "secure"},
     ))
 
     stages.append(make_stage(
-        5, "Key Exchange (ECDHE)", "Both sides compute locally - nothing is sent",
-        "Each side combines its own private key with the other side's public key.",
+        5, "Both make the same secret (Key exchange)", "Both sides compute locally - nothing is sent",
+        "Each side mixes its private key with the other's public key. Compare the two results.",
         [
             "Client computes: X25519(client_private, server_public)",
             "Server computes: X25519(server_private, client_public)",
@@ -176,17 +172,16 @@ def build_handshake_steps(message="GET /account HTTP/1.1"):
             "Secrets match: " + ("YES ✔" if keys["secrets_match"] else "NO"),
         ],
         "Both sides need the same secret, but sending it would let eavesdroppers copy it.",
-        "Confidentiality and forward secrecy. The keys are ephemeral (thrown away after "
-        "the session), so even if the server's long-term private key leaks later, "
-        "recorded traffic cannot be decrypted.",
+        "Confidentiality and forward secrecy: these keys are thrown away after the session, "
+        "so recorded traffic stays safe even if a server key leaks later.",
         highlight={CLIENT: "secure", SERVER: "secure"},
         extra=["These values were calculated just now by Python using real X25519.",
                "An eavesdropper saw only the two PUBLIC keys and cannot compute this secret."],
     ))
 
     stages.append(make_stage(
-        6, "Session Key Establishment", "Browser → Server (Finished)",
-        "Session keys are derived from the shared secret and the client confirms with Finished.",
+        6, "Turn the secret into keys (Session keys)", "Browser → Server (Finished)",
+        "Both sides turn the shared secret into session keys, then confirm.",
         [
             "Client write key (HKDF): " + keys["client_write_key"].hex(),
             "Server write key (HKDF): " + keys["server_write_key"].hex(),
@@ -194,8 +189,8 @@ def build_handshake_steps(message="GET /account HTTP/1.1"):
         ],
         "Separate keys for each direction, and a final check that nobody tampered with "
         "the handshake messages (e.g. forcing weaker algorithms).",
-        "Integrity of the handshake. If an attacker altered any hello message, the "
-        "Finished values would not match and the connection would be aborted.",
+        "Handshake integrity: if anyone changed a hello message, the Finished check fails "
+        "and the connection stops.",
         packet=make_packet(CLIENT, SERVER, "encrypted", "Finished",
                            {"Message": "Finished", "Encrypted": "Yes"}),
         highlight={CLIENT: "secure", SERVER: "secure"},
@@ -203,16 +198,15 @@ def build_handshake_steps(message="GET /account HTTP/1.1"):
     ))
 
     stages.append(make_stage(
-        7, "Secure Application Data", "Browser ⇄ Server",
-        "Normal HTTP traffic now flows inside encrypted TLS records.",
+        7, "Send data safely (Application data)", "Browser ⇄ Server",
+        "Your request now travels encrypted with the new session key.",
         [
             "Plaintext (inside the browser): " + message,
             "AES-256-GCM nonce: " + record["nonce_hex"],
             "Encrypted record: " + record["combined_hex"],
         ],
         "This is the whole point of the handshake: protecting the real data.",
-        "Authenticated encryption (AEAD) gives confidentiality AND integrity: any change "
-        "to the ciphertext makes decryption fail.",
+        "Authenticated encryption: any change to the ciphertext makes decryption fail.",
         packet=make_packet(CLIENT, SERVER, "encrypted", "Application Data",
                            {"Message": "TLS Application Data", "Cipher": "AES-256-GCM",
                             "Ciphertext": record["combined_hex"][:48] + "..."}),
