@@ -1,0 +1,437 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Overview · HTTPS &amp; TLS Lab</title>
+  <!-- Fonts: Geist (interface) and IBM Plex Mono (technical values). If offline, the
+       stylesheet falls back to Manrope / system fonts automatically. -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="/HTTPs_TeachAndDemo/static/css/style.css">
+  <link rel="icon" href="/HTTPs_TeachAndDemo/static/images/favicon.svg" type="image/svg+xml">
+</head>
+<body class="" data-lab="home">
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-laptop" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="11" rx="1.5"/><path d="M2 19.5h20"/></symbol>
+    <symbol id="i-server" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="7.5" rx="1.5"/><rect x="4" y="13.5" width="16" height="7.5" rx="1.5"/><path d="M8 6.8h.01M8 17.3h.01M12 6.8h4M12 17.3h4"/></symbol>
+    <symbol id="i-attacker" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.5c-4.2 0-7 3.6-7 8.2V21h14V10.7c0-4.6-2.8-8.2-7-8.2z"/><path d="M8.5 11.5l2.3 1M15.5 11.5l-2.3 1M9.5 16.5h5"/></symbol>
+    <symbol id="i-router" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="13" width="18" height="7" rx="2"/><path d="M7 16.5h.01M11 16.5h.01M8.5 9a5 5 0 0 1 7 0M6 6.2a8.6 8.6 0 0 1 12 0"/></symbol>
+    <symbol id="i-globe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></symbol>
+    <symbol id="i-handshake" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h14l-3.5-3.5M20 16H6l3.5 3.5"/></symbol>
+    <symbol id="i-key" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="7.5" cy="15.5" r="4"/><path d="M10.5 12.5l9-9M16 7l2.5 2.5M13.5 9.5l2 2"/></symbol>
+    <symbol id="i-certificate" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 17H4.5A1.5 1.5 0 0 1 3 15.5v-11A1.5 1.5 0 0 1 4.5 3h15A1.5 1.5 0 0 1 21 4.5v6"/><path d="M7 8h10M7 11.5h5"/><circle cx="17" cy="15.5" r="3"/><path d="M15.3 18l-.8 3.5 2.5-1.2 2.5 1.2-.8-3.5"/></symbol>
+    <symbol id="i-packets" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="4" rx="1"/><rect x="3" y="10" width="18" height="4" rx="1"/><rect x="3" y="16" width="18" height="4" rx="1"/><path d="M6 6h.01M6 12h.01M6 18h.01"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7.5a4 4 0 0 1 8 0V11"/></symbol>
+    <symbol id="i-unlock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7.5a4 4 0 0 1 7.6-1.8"/></symbol>
+    <symbol id="i-home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7M5.5 9.5V20h13V9.5"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 5-3.4 8-8 9-4.6-1-8-4-8-9V6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></symbol>
+    <symbol id="i-warning" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5l9.5 16.5h-19z"/><path d="M12 10v4.5M12 17.5h.01"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l12.5-7.5z"/></symbol>
+    <symbol id="i-pause" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4.5" width="4" height="15" rx="1"/><rect x="14" y="4.5" width="4" height="15" rx="1"/></symbol>
+    <symbol id="i-next" viewBox="0 0 24 24" fill="currentColor"><path d="M5 5v14l10-7z"/><rect x="16" y="5" width="3" height="14" rx="1"/></symbol>
+    <symbol id="i-prev" viewBox="0 0 24 24" fill="currentColor"><path d="M19 5v14L9 12z"/><rect x="5" y="5" width="3" height="14" rx="1"/></symbol>
+    <symbol id="i-replay" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1"/><path d="M3.5 4v5h5"/></symbol>
+    <symbol id="i-stop" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="i-gateway" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="13" width="18" height="7" rx="2"/><path d="M7 16.5h.01M11 16.5h.01M12 13V4M8.5 7.5L12 4l3.5 3.5"/></symbol>
+  </defs>
+</svg>
+
+<header class="site-header">
+  <button class="btn btn-sm menu-button" id="menu-button" aria-controls="sidebar">Labs</button>
+  <a class="brand" href="/HTTPs_TeachAndDemo/http-https">
+    <span class="brand-mark" aria-hidden="true">TLS</span>
+    <span class="brand-name">HTTPS Learning Lab</span>
+  </a>
+  <nav class="header-nav" aria-label="Main">
+    <a href="/HTTPs_TeachAndDemo/http-https" class="">Learn HTTPS</a>
+    <a href="/HTTPs_TeachAndDemo/labs" class="active">All Labs</a>
+    <a href="/HTTPs_TeachAndDemo/mitm" class="">MITM Lab</a>
+  </nav>
+  <span class="header-spacer"></span>
+  <button class="btn btn-tutorial" id="quick-guide-button" type="button" data-start-guide>Start Here &mdash; Learn HTTPS</button>
+</header>
+
+<div class="app">
+  <aside class="sidebar" id="sidebar" aria-label="Laboratory index">
+    <nav class="nav">
+      
+        
+        <div class="nav-label">Core lesson</div>
+        
+        <a href="/HTTPs_TeachAndDemo/http-https" data-module="http_https"
+           class=" ">
+          <span class="num">01</span>
+          <span>HTTP vs HTTPS<span class="start-tag">Start here</span></span>
+          <span class="status" title="0 of 2 activities explored"></span>
+        </a>
+        
+      
+        
+        
+        
+        <a href="/HTTPs_TeachAndDemo/journey" data-module="journey"
+           class=" ">
+          <span class="num">02</span>
+          <span>The Journey of a Website</span>
+          <span class="status" title="0 of 1 activities explored"></span>
+        </a>
+        
+      
+        
+        
+        <div class="nav-label nav-label-gap">Explore deeper</div>
+        <a href="/HTTPs_TeachAndDemo/tls-handshake" data-module="tls_handshake"
+           class=" ">
+          <span class="num">03</span>
+          <span>TLS 1.3 Handshake</span>
+          <span class="status" title="0 of 1 activities explored"></span>
+        </a>
+        
+      
+        
+        
+        
+        <a href="/HTTPs_TeachAndDemo/encryption" data-module="encryption"
+           class=" ">
+          <span class="num">04</span>
+          <span>Encryption Lab</span>
+          <span class="status" title="0 of 4 activities explored"></span>
+        </a>
+        
+      
+        
+        
+        
+        <a href="/HTTPs_TeachAndDemo/certificates" data-module="certificates"
+           class=" ">
+          <span class="num">05</span>
+          <span>Certificate Explorer</span>
+          <span class="status" title="0 of 5 activities explored"></span>
+        </a>
+        
+      
+        
+        
+        
+        <a href="/HTTPs_TeachAndDemo/mitm" data-module="mitm"
+           class=" featured">
+          <span class="num">06</span>
+          <span>MITM Attack Lab<span class="feature-tag">Featured</span></span>
+          <span class="status" title="0 of 5 activities explored"></span>
+        </a>
+        
+        <div class="sub">
+          <a href="/HTTPs_TeachAndDemo/mitm?scenario=cert_spoof"><span class="num">↳</span>Fake certificate</a>
+          <a href="/HTTPs_TeachAndDemo/mitm?scenario=ssl_strip"><span class="num">↳</span>SSL/TLS stripping</a>
+          <a href="/HTTPs_TeachAndDemo/mitm?scenario=arp"><span class="num">↳</span>ARP spoofing</a>
+        </div>
+        
+      
+        
+        
+        
+        <a href="/HTTPs_TeachAndDemo/packet-inspection" data-module="packet_inspection"
+           class=" ">
+          <span class="num">07</span>
+          <span>Packet Inspector</span>
+          <span class="status" title="0 of 2 activities explored"></span>
+        </a>
+        
+      
+      <a href="/HTTPs_TeachAndDemo/glossary" class=" glossary-link"><span class="num">A–Z</span><span>Glossary</span><span></span></a>
+      <a href="/HTTPs_TeachAndDemo/labs" class="active all-labs"><span class="num">··</span><span>All labs overview</span><span></span></a>
+    </nav>
+    <div class="sidebar-foot">
+      <div class="row"><span>Explored <strong id="sidebar-percent">0%</strong></span>
+        <button class="link-btn" id="reset-progress" type="button">Reset</button></div>
+      <div class="progress-bar"><span id="sidebar-bar" style="width: 0%"></span></div>
+    </div>
+  </aside>
+  <div class="overlay" id="overlay"></div>
+
+  <div class="main">
+    <main class="content">
+      
+<section class="landing-intro">
+  <div>
+    <div class="eyebrow">All labs</div>
+    <h1>See What HTTPS Protects</h1>
+    <p class="lead">Start with the HTTP vs HTTPS lesson, then explore TLS, certificates and attacks.</p>
+  </div>
+  <div class="intro-actions">
+    <button class="btn btn-tutorial" type="button" data-start-guide>Start Here &mdash; Learn HTTPS</button>
+    <a class="btn" href="/HTTPs_TeachAndDemo/mitm">Open MITM Lab</a>
+  </div>
+</section>
+
+<!-- Live preview: the same Python MITM simulation used in Lab 06, trimmed to one question. -->
+<section class="card sim-card" id="demo">
+  <div class="sim-head">
+    <div>
+      <div class="eyebrow">Explore deeper · <span class="attack">MITM preview</span></div>
+      <h2>Can the attacker read the login?</h2>
+    </div>
+    <div class="segmented" id="demo-protocol" aria-label="Protocol">
+      <button class="active is-http" data-value="http_mitm">Over HTTP</button>
+      <button class="is-https" data-value="https_mitm">Over HTTPS</button>
+    </div>
+  </div>
+  <div class="net-diagram" id="diagram"></div>
+  <div class="diagram-legend">
+    <span><i style="color:var(--blue)"></i>Readable</span>
+    <span><i style="color:var(--green)"></i>Encrypted</span>
+    <span><i style="color:var(--red);border-top-style:dashed"></i>Intercepted</span>
+    <span><i style="color:var(--yellow);border-top-style:dotted"></i>Warning</span>
+    <span><i style="color:var(--grey)"></i>Inactive</span>
+  </div>
+  <div id="player"></div>
+  <div class="sim-panels view-grid">
+    <div class="view-box client">
+      <h4>Victim sent</h4>
+      <pre class="output empty" id="victim-view">-</pre>
+    </div>
+    <div class="view-box attacker">
+      <h4>Attacker sees</h4>
+      <div id="attacker-status"></div>
+      <pre class="output empty" id="attacker-view">Nothing intercepted yet.</pre>
+    </div>
+    <div class="view-box server">
+      <h4>Server received</h4>
+      <pre class="output empty" id="server-view">Nothing received yet.</pre>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="section-head">
+    <h2>Seven labs</h2>
+    <span class="small muted">Start with the core lesson, then go deeper in any order</span>
+  </div>
+  <ol class="lab-table">
+    
+    <li class="lab-group">Core lesson</li>
+    
+    <li class="lab-row ">
+      <span class="num">01</span>
+      <div>
+        <h3>HTTP vs HTTPS <span class="tag tag-green">Start here</span></h3>
+        <p>Send a login over HTTP and HTTPS, and see what changes.</p>
+        
+      </div>
+      <a class="btn btn-primary" href="/HTTPs_TeachAndDemo/http-https">Open lab</a>
+    </li>
+    
+    
+    
+    <li class="lab-row ">
+      <span class="num">02</span>
+      <div>
+        <h3>The Journey of a Website</h3>
+        <p>Follow a website visit, one stage at a time.</p>
+        
+      </div>
+      <a class="btn " href="/HTTPs_TeachAndDemo/journey">Open lab</a>
+    </li>
+    
+    
+    <li class="lab-group">Explore deeper</li>
+    <li class="lab-row ">
+      <span class="num">03</span>
+      <div>
+        <h3>TLS 1.3 Handshake</h3>
+        <p>Watch a browser and website agree a secret key.</p>
+        
+      </div>
+      <a class="btn " href="/HTTPs_TeachAndDemo/tls-handshake">Open lab</a>
+    </li>
+    
+    
+    
+    <li class="lab-row ">
+      <span class="num">04</span>
+      <div>
+        <h3>Encryption Lab</h3>
+        <p>Encrypt, hash and sign your own text.</p>
+        
+      </div>
+      <a class="btn " href="/HTTPs_TeachAndDemo/encryption">Open lab</a>
+    </li>
+    
+    
+    
+    <li class="lab-row ">
+      <span class="num">05</span>
+      <div>
+        <h3>Certificate Explorer</h3>
+        <p>Check a website&#39;s ID card - then break it.</p>
+        
+      </div>
+      <a class="btn " href="/HTTPs_TeachAndDemo/certificates">Open lab</a>
+    </li>
+    
+    
+    
+    <li class="lab-row featured">
+      <span class="num">06</span>
+      <div>
+        <h3>MITM Attack Lab <span class="tag tag-red">Featured</span></h3>
+        <p>See what an attacker in the middle can do, and what stops them.</p>
+        
+        <div class="scenario-links">
+          <a class="btn btn-sm" href="/HTTPs_TeachAndDemo/mitm?scenario=http_mitm">HTTP interception</a>
+          <a class="btn btn-sm" href="/HTTPs_TeachAndDemo/mitm?scenario=cert_spoof">Fake certificate</a>
+          <a class="btn btn-sm" href="/HTTPs_TeachAndDemo/mitm?scenario=ssl_strip">SSL/TLS stripping</a>
+          <a class="btn btn-sm" href="/HTTPs_TeachAndDemo/mitm?scenario=arp">ARP spoofing</a>
+        </div>
+        
+      </div>
+      <a class="btn " href="/HTTPs_TeachAndDemo/mitm">Open lab</a>
+    </li>
+    
+    
+    
+    <li class="lab-row ">
+      <span class="num">07</span>
+      <div>
+        <h3>Packet Inspector</h3>
+        <p>See what HTTPS hides in captured traffic, and what it does not.</p>
+        
+      </div>
+      <a class="btn " href="/HTTPs_TeachAndDemo/packet-inspection">Open lab</a>
+    </li>
+    
+  </ol>
+  <p class="small muted">Stuck on a word? Every key term is in the <a href="/HTTPs_TeachAndDemo/glossary">Glossary</a>.</p>
+</section>
+
+<section class="section">
+  <details class="more">
+    <summary>Technical details: the three jobs of TLS</summary>
+    <div class="more-body">
+      <p><strong>Confidentiality</strong> - data is encrypted, so eavesdroppers see only ciphertext.</p>
+      <p><strong>Integrity</strong> - authenticated encryption detects any change made in transit.</p>
+      <p><strong>Authentication</strong> - the certificate proves the server controls the domain name.</p>
+    </div>
+  </details>
+  <details class="more">
+    <summary>Learn more: what HTTPS does not do</summary>
+    <div class="more-body">
+      <p>It does not prove a website is honest (scam sites have padlocks too), it cannot protect a device that already
+        has malware, and it does not hide which servers you connect to. Interception is still possible if a user clicks
+        through a certificate warning, a malicious root CA is installed, or the first visit is downgraded to HTTP
+        without HSTS - the MITM lab demonstrates each case.</p>
+    </div>
+  </details>
+  <details class="more">
+    <summary>How this app works</summary>
+    <div class="more-body">
+      <div class="flow">
+        <div class="flow-box plain"><strong>Browser</strong>you press Start</div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-box key"><strong>Flask API</strong>JSON request</div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-box cipher"><strong>Python</strong>runs the simulation</div>
+      </div>
+      <p class="small muted" style="margin-top:10px">Python builds each simulation as a list of steps (real ciphertext, real
+        key exchange, real certificate checks) and returns it as JSON. JavaScript only animates it.</p>
+    </div>
+  </details>
+</section>
+
+      <p class="footer-note">
+        All networks, packets and attacks are simulated inside this application - no real traffic is touched.
+        Keys, ciphertexts, hashes, signatures and certificates are generated for real by Python's <code>cryptography</code> library.
+      </p>
+    </main>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+  <div class="modal">
+    <div class="modal-head">
+      <span id="modal-tag"></span>
+      <h3 id="modal-title">Packet details</h3>
+      <button class="icon-btn" id="modal-close">Close</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+  </div>
+</div>
+
+<script>
+  // Each lab's name, link and "completed" message (from progress.py), in lab order.
+  const LAB_LIST = [{"done_text": "You\u0027ve seen how HTTP and HTTPS handle information differently.", "done_title": "HTTP vs HTTPS Lab Completed", "slug": "http_https", "summary": "Send a login over HTTP and HTTPS, and see what changes.", "title": "HTTP vs HTTPS", "url": "/HTTPs_TeachAndDemo/http-https"}, {"done_text": "You\u0027ve followed a website request from pressing Enter to the page appearing.", "done_title": "Journey of a Website Completed", "slug": "journey", "summary": "Follow a website visit, one stage at a time.", "title": "The Journey of a Website", "url": "/HTTPs_TeachAndDemo/journey"}, {"done_text": "You\u0027ve learned how a secure connection is established.", "done_title": "TLS 1.3 Lab Completed", "slug": "tls_handshake", "summary": "Watch a browser and website agree a secret key.", "title": "TLS 1.3 Handshake", "url": "/HTTPs_TeachAndDemo/tls-handshake"}, {"done_text": "You\u0027ve used symmetric and public-key encryption, hashing and digital signatures.", "done_title": "Encryption Lab Completed", "slug": "encryption", "summary": "Encrypt, hash and sign your own text.", "title": "Encryption Lab", "url": "/HTTPs_TeachAndDemo/encryption"}, {"done_text": "You\u0027ve seen every check a browser makes on a certificate, and what happens when one fails.", "done_title": "Certificate Explorer Completed", "slug": "certificates", "summary": "Check a website\u0027s ID card - then break it.", "title": "Certificate Explorer", "url": "/HTTPs_TeachAndDemo/certificates"}, {"done_text": "You\u0027ve seen what an attacker in the middle can and cannot do, and which defences stop them.", "done_title": "MITM Lab Completed", "slug": "mitm", "summary": "See what an attacker in the middle can do, and what stops them.", "title": "MITM Attack Lab", "url": "/HTTPs_TeachAndDemo/mitm"}, {"done_text": "You\u0027ve seen what HTTPS hides in captured traffic, and what it still reveals.", "done_title": "Packet Inspector Completed", "slug": "packet_inspection", "summary": "See what HTTPS hides in captured traffic, and what it does not.", "title": "Packet Inspector", "url": "/HTTPs_TeachAndDemo/packet-inspection"}];
+  // Addresses the scripts link to (built by Flask, so they also work on GitHub Pages).
+  const HOME_URL = "/HTTPs_TeachAndDemo/http-https";
+  const GLOSSARY_URL = "/HTTPs_TeachAndDemo/glossary";
+</script>
+<script src="/HTTPs_TeachAndDemo/static/js/interactions.js"></script>
+<script src="/HTTPs_TeachAndDemo/static/js/tutorial.js"></script>
+
+<!-- GitHub Pages copy only: run the Python code in the browser (see build_site.py). -->
+<script>const PYTHON_ZIP_URL = "/HTTPs_TeachAndDemo/static/python-lab.zip";</script>
+<script src="/HTTPs_TeachAndDemo/static/js/static_site.js"></script>
+
+
+<script>
+/* Landing page preview - plays MITM scenario A (HTTP) or B (HTTPS) from the Python API.
+   Nothing plays until the user presses Start. */
+document.addEventListener("DOMContentLoaded", function () {
+  const MESSAGE = "Username: John Doe\nPassword: example123";
+  const diagram = new NetworkDiagram($("#diagram"));
+  const getScenario = setupSegmented($("#demo-protocol"), function () { player.reset(); });
+
+  function request() {
+    return apiPost("/api/mitm/simulate", {
+      scenario: getScenario(), message: MESSAGE, options: { attacker_modifies: false },
+    });
+  }
+
+  function setOutput(element, text, emptyText, className) {
+    element.className = "output " + (text ? className : "empty");
+    element.textContent = text || emptyText;
+  }
+
+  function clearPanels() {
+    setOutput($("#victim-view"), "", "-");
+    setOutput($("#attacker-view"), "", "Nothing intercepted yet.");
+    setOutput($("#server-view"), "", "Nothing received yet.");
+    $("#attacker-status").innerHTML = "";
+  }
+
+  const player = new StepPlayer({
+    diagram: diagram,
+    mount: $("#player"),
+    startLabel: "Start",
+    introTitle: "Press Start to send a login",
+    introText: "The login travels left to right, through the attacker.",
+    loadSteps: function () { clearPanels(); return request(); },
+    onStep: function (step, index, panels) {
+      setOutput($("#victim-view"), panels.victim_sent, "-", "plain");
+      setOutput($("#attacker-view"), panels.attacker_saw, "Nothing intercepted yet.",
+        panels.attacker_can_read ? "danger" : "cipher");
+      $("#attacker-status").innerHTML = panels.attacker_saw === undefined ? "" : panels.attacker_can_read
+        ? '<div class="callout danger"><strong>Readable.</strong> Password exposed.</div>'
+        : '<div class="callout good"><strong>Ciphertext only.</strong> Content protected.</div>';
+      setOutput($("#server-view"), panels.server_received, "Nothing received yet.", "plain");
+    },
+    onReset: function () {
+      clearPanels();
+      request().then(function (data) { diagram.setNodes(data.nodes, data.extra_links); });
+    },
+  });
+
+  // Draw the devices straight away (no packets move until Start).
+  request().then(function (data) { diagram.setNodes(data.nodes, data.extra_links); });
+});
+</script>
+
+</body>
+</html>
