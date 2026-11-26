@@ -46,12 +46,12 @@
 
 <header class="site-header">
   <button class="btn btn-sm menu-button" id="menu-button" aria-controls="sidebar">Labs</button>
-  <a class="brand" href="/">
+  <a class="brand" href="{{ url_for('http_https_page') }}">
     <span class="brand-mark" aria-hidden="true">TLS</span>
     <span class="brand-name">HTTPS Learning Lab</span>
   </a>
   <nav class="header-nav" aria-label="Main">
-    <a href="/" class="{{ 'active' if active == 'http_https' }}">Learn HTTPS</a>
+    <a href="{{ url_for('http_https_page') }}" class="{{ 'active' if active == 'http_https' }}">Learn HTTPS</a>
     <a href="{{ url_for('index') }}" class="{{ 'active' if active == 'home' }}">All Labs</a>
     <a href="{{ url_for('mitm_page') }}" class="{{ 'active' if active == 'mitm' }}">MITM Lab</a>
   </nav>
@@ -116,9 +116,17 @@
 <script>
   // Each lab's name, link and "completed" message (from progress.py), in lab order.
   const LAB_LIST = {{ lab_info | tojson }};
+  // Addresses the scripts link to (built by Flask, so they also work on GitHub Pages).
+  const HOME_URL = {{ url_for('http_https_page') | tojson }};
+  const GLOSSARY_URL = {{ url_for('glossary_page') | tojson }};
 </script>
 <script src="{{ url_for('static', filename='js/interactions.js') }}"></script>
 <script src="{{ url_for('static', filename='js/tutorial.js') }}"></script>
+{% if config.STATIC_SITE %}
+<!-- GitHub Pages copy only: run the Python code in the browser (see build_site.py). -->
+<script>const PYTHON_ZIP_URL = {{ url_for('static', filename='python-lab.zip') | tojson }};</script>
+<script src="{{ url_for('static', filename='js/static_site.js') }}"></script>
+{% endif %}
 {% block scripts %}{% endblock %}
 </body>
 </html>

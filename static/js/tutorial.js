@@ -201,7 +201,7 @@ function loadTutorialState() {
 // go straight back to the tutorial, which then shows the usual warning.
 function returnToTutorialIfNeeded() {
   if (navigationIsLocked() && !onTutorialPage()) {
-    window.location.replace("/?tutorial=1&blocked=1");
+    window.location.replace(HOME_URL + "?tutorial=1&blocked=1");
   }
 }
 
@@ -302,7 +302,7 @@ function isNarrowScreen() {
 function startGuide() {
   // The tutorial lives on the HTTP vs HTTPS page, so go there first if needed.
   if (!$("#compare-box")) {
-    window.location.href = "/?tutorial=1";
+    window.location.href = HOME_URL + "?tutorial=1";
     return;
   }
   // Already running: show it again at the same step instead of restarting.
@@ -615,7 +615,7 @@ function showLabComplete(slug) {
   const box = buildGuideBox("Lab complete",
     '<div class="guide-title">' + escapeHtml(lab.done_title) + "</div>" +
     '<p class="guide-text">' + escapeHtml(lab.done_text) + "</p>" +
-    (next ? "" : '<p class="guide-todo">That was the last lab. Look up any word in the <a href="/glossary">Glossary</a>.</p>') +
+    (next ? "" : '<p class="guide-todo">That was the last lab. Look up any word in the <a href="' + GLOSSARY_URL + '">Glossary</a>.</p>') +
     '<div class="guide-controls guide-complete-controls">' +
     (next ? '<a class="btn btn-sm btn-primary" data-guide="continue" href="' + escapeHtml(next.url) + '">Continue to ' +
       escapeHtml(next.title) + "</a>" : "") +

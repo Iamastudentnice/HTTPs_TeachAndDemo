@@ -183,5 +183,14 @@ document.addEventListener("DOMContentLoaded", function () {
     $(id).addEventListener("input", function () { if (player.steps.length) player.reset(); });
   });
 
+  // A link such as mitm?scenario=arp opens that scenario. (Flask also marks it on the
+  // server; this line is what makes it work on the GitHub Pages copy.)
+  const linked = new URLSearchParams(window.location.search).get("scenario");
+  const scenarioButtons = $all("#scenario-toggle button[data-value]");
+  const linkedButton = scenarioButtons.find(function (button) { return button.dataset.value === linked; });
+  if (linkedButton) {
+    scenarioButtons.forEach(function (button) { button.classList.toggle("active", button === linkedButton); });
+  }
+
   scenarioChanged();
 });
