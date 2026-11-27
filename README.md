@@ -94,12 +94,23 @@ press `Ctrl + C` in the terminal to stop the app.
   Next Step moves one step at a time. Select any packet to inspect it.
 - The demo login (John Doe / example123) is fictional. Never type a real password into the app.
 
+## Public copy on GitHub Pages
+
+GitHub Pages can only serve files, it cannot run a Python server. `python build_site.py` builds a
+copy of the lab in the `site` folder: every page saved as HTML, plus `static/python-lab.zip` with
+this Python code. In that copy, `static/js/static_site.js` starts Pyodide (Python that runs inside
+the browser) and sends each request to the same Flask app, so the encryption is still done by
+Python - on the visitor's own computer. Publish the contents of `site` to the `gh-pages` branch.
+Running the lab locally (above) does not use any of this.
+
 ## Structure
 
 ```
 app.py                 Flask routes (pages + JSON API)
 progress.py            Exploration progress
 glossary.py            The glossary words and their one-line meanings
+build_site.py          Builds the GitHub Pages copy (folder "site")
+browser_api.py         GitHub Pages copy only: passes requests to Flask inside the browser
 simulations/           One Python module per lab
 templates/             HTML pages
 static/css, static/js  Styling and animations (interactions.js is shared)
