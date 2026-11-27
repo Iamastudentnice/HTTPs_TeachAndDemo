@@ -6,6 +6,7 @@ All networks and attacks are simulated; the cryptography is real (Python `crypto
 ## Run it
 
 Requires Python 3.10 or newer (check with `python3 --version`; download from python.org if needed).
+Go to the Github.io link to access: https://iamastudentnice.github.io/HTTPs_TeachAndDemo/
 
 ### macOS / Linux (Terminal)
 
